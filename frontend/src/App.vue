@@ -1,15 +1,15 @@
 <template>
   <div id="app">
-    <NetworkChart />
+    <MainPage />
   </div>
 </template>
 <script>
-import NetworkChart from './components/NetworkChart.vue';
+import MainPage from './views/MainPage.vue';
 
 export default {
   name: 'App',
   components: {
-    NetworkChart
+    MainPage
   },
 };
 </script>
