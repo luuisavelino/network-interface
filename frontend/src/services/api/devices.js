@@ -18,6 +18,17 @@ const insertDevice = (data) => {
   return axios.request(config)
 }
 
+const getRoute = (sourceId, targetId) => {
+  const config = {
+    method: 'get',
+    url: API_URL + '/route/' + sourceId + '/' + targetId,
+    headers,
+  };
+
+  return axios.request(config)
+}
+
 export default {
   insertDevice,
+  getRoute,
 }

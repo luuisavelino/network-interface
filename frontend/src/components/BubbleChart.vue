@@ -23,7 +23,7 @@ export default {
   },
   props: {
     routesData: {
-      type: Array,
+      type: Object,
       required: true
     },
     linesData: {
@@ -57,7 +57,7 @@ export default {
     getChartOptions() {
       return {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
         scales: {
           x: {
             type: 'linear',
@@ -70,18 +70,53 @@ export default {
             beginAtZero: true,
           }
         },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.raw.label || '';
+                return `${label} (X: ${context.raw.x}, Y: ${context.raw.y}, R: ${context.raw.r.toFixed(2)})`;
+              }
+            }
+          },
+          onResize: function(chart) {
+            chart.data.datasets[0].data.forEach((item) => {
+              item.r = this.calculateRadiusInChartUnits(item.x, item.y, chart);
+            });
+            chart.update();
+          }
+        }
       }
     },
+    bubblePosition() {
+      if (!this.chartInstance) return;
+      const result = {};
+      const dataPoints = this.chartInstance.getDatasetMeta(0).data;
+      dataPoints.forEach((point, index) => {
+        result[point.$context.raw.label] = index;
+      });
+
+      return result;
+    }
   },
   methods: {
+    calculateRadiusInChartUnits(x, y, chart, baseRadius = 10) {
+      const xScale = chart.scales.x;
+      const yScale = chart.scales.y;
+
+      const xPixelsPerUnit = (xScale.right - xScale.left) / (xScale.max - xScale.min);
+      const yPixelsPerUnit = (yScale.bottom - yScale.top) / (yScale.max - yScale.min);
+
+      const pixelsPerUnit = (xPixelsPerUnit + yPixelsPerUnit) / 2;
+
+      return baseRadius / pixelsPerUnit;
+    },
     drawLines() {
       this.chartInstance = this.$refs.bubble.chart;
-
       const ctx = this.chartInstance.ctx;
-
       this.linesData.forEach(line => {
-        const point1 = this.chartInstance.getDatasetMeta(0).data[line.index1];
-        const point2 = this.chartInstance.getDatasetMeta(0).data[line.index2];
+        const point1 = this.chartInstance.getDatasetMeta(0).data[this.bubblePosition[line.source]];
+        const point2 = this.chartInstance.getDatasetMeta(0).data[this.bubblePosition[line.target]];
 
         ctx.save();
         ctx.beginPath();
@@ -92,18 +127,15 @@ export default {
         ctx.stroke();
         ctx.restore();
       });
-    }
+    },
   },
   watch: {
-    showLines: {
+    linesData: {
       handler() {
-        if (this.showLines) {
-          this.drawLines();
-        }
+        this.drawLines();
       },
       deep: true
     },
   }
 };
 </script>
-

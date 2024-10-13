@@ -1,74 +1,119 @@
 <template>
-  <div>
+  <div class="main-container">
+    <div class="form-container left-column">
+      <div class="form-wrapper">
+        <AddDevice v-on:update-devices="getDevices"/>
+      </div>
+      <div class="form-wrapper">
+        <FindBestRoute v-on:get-route="getRoute"/>
+      </div>
+    </div>
 
-    <b-form-group label="Email">
-      <b-form-input
-      v-model="email"
-      type="email"
-      placeholder="Digite seu e-mail"
-      ></b-form-input>
-    </b-form-group>
+    <div class="right-column">
+      <BubbleChart 
+        :routesData="routesData" :linesData="linesData" :showLines="showLines" 
+        class="max-size" />
+    </div>
 
-    <button @click="drawLines">Desenhar Linhas</button>
-    <button @click="startRandomUpdates">Iniciar Atualizações Aleatórias</button>
-
-    <BubbleChart :routesData="routesData" :linesData="linesData" :showLines="showLines" />
   </div>
 </template>
 
 <script>
 import BubbleChart from '../components/BubbleChart.vue';
+import AddDevice from '../components/AddDevice.vue';
+import FindBestRoute from '../components/FindBestRoute.vue';
+import servicesEnvironment from '../services/api/environment';
 
 export default {
   name: 'MainPage',
   components: {
     BubbleChart,
+    AddDevice,
+    FindBestRoute,
   },
   data() {
     return {
-      routesData: [
-        { x: 10, y: 20, r: 10 },
-        { x: 10, y: 30, r: 10 },
-        { x: 10, y: 40, r: 10 },
-        { x: 10, y: 50, r: 10 },
-        { x: 10, y: 60, r: 10 }
-      ],
-      linesData: [
-        { index1: 0, index2: 1 },
-        { index1: 1, index2: 2 }
-      ],
+      routesData: [],
+      linesData: [],
       showLines: false,
       intervalId: null
     };
   },
   methods: {
+    getRoute(route) {
+      this.linesData = route;
+    },
     drawLines() {
       this.showLines = !this.showLines;
     },
-    generateRandomData() {
-      return [
-        { x: Math.floor(Math.random() * 10), y: Math.floor(Math.random() * 10), r: 15 },
-        { x: Math.floor(Math.random() * 10), y: Math.floor(Math.random() * 10), r: Math.random() * 5 },
-        { x: Math.floor(Math.random() * 10), y: Math.floor(Math.random() * 10), r: Math.random() * 5 }
-      ];
+    getDevices() {
+      servicesEnvironment.getEnvironment()
+        .then(response => {
+          this.routesData = response.data.devices;
+        })
+        .catch(error => {
+          console.error('Erro ao buscar os dados:', error);
+        });
     },
-    startRandomUpdates() {
+    loadDevices() {
       if (this.intervalId) return;
 
       this.intervalId = setInterval(() => {
         console.log('Updating routes data');
-        this.routesData = this.generateRandomData();
+        this.getDevices()
       }, 5000);
     },
-    stopRandomUpdates() {
+    stopUpdates() {
       if (this.intervalId) {
         clearInterval(this.intervalId);
         this.intervalId = null;
       }
     }
   },
+  beforeMount() {
+    this.getDevices()
+  },
   beforeUnmount() {
-    this.stopRandomUpdates();
+    this.stopUpdates();
   }
 };
 </script>
+
+<style scoped>
+.main-container {
+  display: flex;
+  height: 100vh; /* Altura total da tela */
+}
+
+.left-column {
+  flex: 1;
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.right-column {
+  flex: 2;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: flex 0.3s ease;
+  width: 100%;
+  height: 100%;
+}
+
+.max-size {
+  width: 100%;
+  height: 100%;
+}
+
+.form-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+</style>
