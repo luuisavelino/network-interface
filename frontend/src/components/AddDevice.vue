@@ -2,11 +2,13 @@
   <div class="container">
     <h2 class="my-4">Adicionar dispositivo</h2>
     <form @submit.prevent="handleSubmit">
-      <div class="mb-3">
+      <!-- Campo ID -->
+      <div class="form-group">
         <label for="id" class="form-label">ID</label>
         <input type="number" v-model="formData.id" class="form-control" id="id" required>
       </div>
 
+      <!-- Campos Power, Posição X, Posição Y -->
       <div class="form-container">
         <div class="form-group">
           <label for="power" class="form-label">Power</label>
@@ -24,6 +26,7 @@
         </div>
       </div>
 
+      <!-- Campos Velocidade de Caminhada, Frequência de Mensagens -->
       <div class="form-container">
         <div class="form-group">
           <label for="walking_speed" class="form-label">Velocidade de Caminhada</label>
@@ -36,9 +39,13 @@
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary">Enviar</button>
+      <!-- Botão Enviar -->
+      <div class="submit-container">
+        <button type="submit" class="btn btn-primary">Enviar</button>
+      </div>
     </form>
 
+    <!-- Resposta do Servidor -->
     <div v-if="responseData" class="alert alert-success mt-4">
       <strong>Resposta do servidor:</strong>
       <pre>{{ responseData }}</pre>
@@ -87,21 +94,29 @@ export default {
 </script>
 
 <style scoped>
+/* Estilo para o layout dos campos */
 .form-container {
+  /* margin-bottom: 24px; */
   display: flex;
   gap: 20px;
 }
 
 .form-group {
   flex: 1;
+  margin-bottom: 24px;
 }
 
 .form-label {
-  display: block;
-  margin-bottom: 5px;
+  margin: 5px 0;
 }
 
 .form-control {
   width: 100%;
+}
+
+/* Estilo para o botão de envio no lado direito */
+.submit-container {
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

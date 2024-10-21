@@ -1,7 +1,5 @@
 <template>
-  <div>
-    <Bubble :data="getChartData" :options="getChartOptions" ref="bubble"/>
-  </div>
+  <Bubble ref="bubble" :data="getChartData" :options="getChartOptions" style="height:1000px; width:1000px" />
 </template>
 
 <script>
@@ -13,8 +11,6 @@ import {
   LinearScale
 } from 'chart.js'
 import { Bubble } from 'vue-chartjs'
-
-ChartJS.register(LinearScale, PointElement, Tooltip, Legend)
 
 export default {
   name: 'BubbleChart',
@@ -37,37 +33,53 @@ export default {
   },
   data() {
     return {
-      chartInstance: null,
+      chart: null,
+      bubbleColor: {}
     };
   },
   computed: {
+    customData() {
+      return this.routesData.map(route => {
+        return {
+          backgroundColor: 'rgba(1, 0, 132, 0.6)',
+          x: route.x,
+          y: route.y,
+          r: this.calculateRadiusInChartUnits(route.r),
+          label: route.label
+        }
+      });
+    },
     getChartData() {
       return {
-        datasets: [
-          {
-            label: 'Routes',
-            data: this.routesData,
-            backgroundColor: 'rgba(255, 99, 132, 0.6)',
-            borderColor: 'rgba(255, 99, 132, 1)',
-            borderWidth: 1
+        datasets: this.customData.map(data => {
+          return {
+            label: data.label,
+            data: [data],
+            backgroundColor: this.getBubbleColor(data.label),
+            borderColor: this.getBubbleColor(data.label),
+            borderWidth: 1,
           }
-        ]
+        })
       }
     },
     getChartOptions() {
       return {
-        responsive: true,
-        maintainAspectRatio: true,
+        responsive: false,
+        maintainAspectRatio: false,
         scales: {
           x: {
             type: 'linear',
             position: 'bottom',
             beginAtZero: true,
+            max: 50,
+            tickLength: 100,
           },
           y: {
             type: 'linear',
             position: 'left',
             beginAtZero: true,
+            max: 50,
+            tickLength: 100,
           }
         },
         plugins: {
@@ -76,47 +88,54 @@ export default {
               label: function(context) {
                 const label = context.raw.label || '';
                 return `${label} (X: ${context.raw.x}, Y: ${context.raw.y}, R: ${context.raw.r.toFixed(2)})`;
-              }
+              },
             }
           },
-          onResize: function(chart) {
-            chart.data.datasets[0].data.forEach((item) => {
-              item.r = this.calculateRadiusInChartUnits(item.x, item.y, chart);
-            });
-            chart.update();
-          }
         }
       }
     },
     bubblePosition() {
-      if (!this.chartInstance) return;
+      if (!this.chart) return;
       const result = {};
-      const dataPoints = this.chartInstance.getDatasetMeta(0).data;
-      dataPoints.forEach((point, index) => {
-        result[point.$context.raw.label] = index;
-      });
+
+      for (let i = 0; i < this.customData.length; i++) {
+        result[this.customData[i].label] = i;
+      }
 
       return result;
-    }
+    },
+  },
+  beforeMount() {
+    ChartJS.register(LinearScale, PointElement, Tooltip, Legend)
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.chart = this.$refs.bubble.chart;
+    });
   },
   methods: {
-    calculateRadiusInChartUnits(x, y, chart, baseRadius = 10) {
-      const xScale = chart.scales.x;
-      const yScale = chart.scales.y;
-
-      const xPixelsPerUnit = (xScale.right - xScale.left) / (xScale.max - xScale.min);
-      const yPixelsPerUnit = (yScale.bottom - yScale.top) / (yScale.max - yScale.min);
-
-      const pixelsPerUnit = (xPixelsPerUnit + yPixelsPerUnit) / 2;
-
-      return baseRadius / pixelsPerUnit;
+    getBubbleColor(bubbleLabel) {
+      if (!this.bubbleColor[bubbleLabel]) {
+        this.bubbleColor[bubbleLabel] = this.randomColor();
+      }
+      return this.bubbleColor[bubbleLabel];
+    },
+    randomColor() {
+      const r = Math.floor(Math.random() * 256);
+      const g = Math.floor(Math.random() * 256);
+      const b = Math.floor(Math.random() * 256);
+      return `rgb(${r}, ${g}, ${b}, 0.6)`;
+    },
+    calculateRadiusInChartUnits(baseRadius = 10) {
+      const xScale = this.chart.scales.x;
+      const xPixelsPerUnit = (xScale.width) / 50;
+      return (baseRadius * xPixelsPerUnit) / 1.35;
     },
     drawLines() {
-      this.chartInstance = this.$refs.bubble.chart;
-      const ctx = this.chartInstance.ctx;
+      const ctx = this.chart.ctx;
       this.linesData.forEach(line => {
-        const point1 = this.chartInstance.getDatasetMeta(0).data[this.bubblePosition[line.source]];
-        const point2 = this.chartInstance.getDatasetMeta(0).data[this.bubblePosition[line.target]];
+        const point1 = this.chart.getDatasetMeta(this.bubblePosition[line.source]).data[0];
+        const point2 = this.chart.getDatasetMeta(this.bubblePosition[line.target]).data[0];
 
         ctx.save();
         ctx.beginPath();
@@ -133,6 +152,12 @@ export default {
     linesData: {
       handler() {
         this.drawLines();
+      },
+      deep: true
+    },
+    routesData: {
+      handler() {
+        this.chart = this.$refs.bubble.chart;
       },
       deep: true
     },

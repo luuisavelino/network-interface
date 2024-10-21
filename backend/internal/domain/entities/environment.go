@@ -1,0 +1,59 @@
+package entities
+
+import (
+	"sync"
+)
+
+type Environment struct {
+	mu sync.Mutex
+	Devices map[int]*Device
+}
+
+func NewEnvironment() Environment {
+	return Environment{
+		Devices: make(map[int]*Device),
+	}
+}
+
+func (e *Environment) AddDevice(device *Device) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	e.Devices[device.ID] = device
+}
+
+func (e *Environment) RemoveDevice(deviceId int) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	delete(e.Devices, deviceId)
+}
+
+func (e *Environment) GetDevice(deviceId int) *Device {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return e.Devices[deviceId]
+}
+
+func (e *Environment) ScanDevicesWithCommunication(deviceId int) []*Device {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	currentDevice := e.Devices[deviceId]
+
+	devicesWithCommunication := make([]*Device, 0)
+
+	for _, device := range e.Devices {
+		if device.ID == currentDevice.ID {
+			continue
+		}
+
+		if currentDevice.CheckIfIsInTheCoverageArea(device.PosX, device.PosY) && 
+				device.CheckIfIsInTheCoverageArea(currentDevice.PosX, currentDevice.PosY) {
+			devicesWithCommunication = append(devicesWithCommunication, device)
+		}
+	}
+
+	return devicesWithCommunication
+}

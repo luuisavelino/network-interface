@@ -1,12 +1,8 @@
 <template>
   <div class="main-container">
     <div class="form-container left-column">
-      <div class="form-wrapper">
-        <AddDevice v-on:update-devices="getDevices"/>
-      </div>
-      <div class="form-wrapper">
-        <FindBestRoute v-on:get-route="getRoute"/>
-      </div>
+      <AddDevice v-on:update-devices="getDevices"/>
+      <FindBestRoute v-on:get-route="getRoute"/>
     </div>
 
     <div class="right-column">
@@ -72,6 +68,7 @@ export default {
   },
   beforeMount() {
     this.getDevices()
+    this.loadDevices()
   },
   beforeUnmount() {
     this.stopUpdates();
@@ -82,7 +79,7 @@ export default {
 <style scoped>
 .main-container {
   display: flex;
-  height: 100vh; /* Altura total da tela */
+  height: 100vh;
 }
 
 .left-column {
@@ -90,6 +87,7 @@ export default {
   padding: 20px;
   box-sizing: border-box;
   overflow-y: auto;
+  height: 100%;
 }
 
 .right-column {
@@ -99,14 +97,11 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: flex 0.3s ease;
-  width: 100%;
-  height: 100%;
 }
 
 .max-size {
-  width: 100%;
-  height: 100%;
+  width: 50vw;
+  height: 100vh;
 }
 
 .form-wrapper {
