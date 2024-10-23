@@ -27,5 +27,5 @@ func (rs environmentService) GetEnvironment(ctx context.Context) (entities.Envir
 		zap.String("journey", "GetEnvironment"),
 	)
 
-	return rs.environment, nil
+	return rs.environment.GetEnvironment(), nil
 }

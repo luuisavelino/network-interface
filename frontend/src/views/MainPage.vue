@@ -68,7 +68,7 @@ export default {
   },
   beforeMount() {
     this.getDevices()
-    this.loadDevices()
+    // this.loadDevices()
   },
   beforeUnmount() {
     this.stopUpdates();

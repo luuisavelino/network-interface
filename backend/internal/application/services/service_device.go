@@ -37,12 +37,10 @@ func (rs deviceService) InsertDevice(ctx context.Context, device entities.Device
 
 	device.RoutingTable = make(map[uuid.UUID]entities.Routing, 0)
 
-	fmt.Println(device)
-
 	rs.environment.AddDevice(&device)
 
-	// rs.ScheduleWalk(device.ID)
-	// rs.ScheduleUpdateRoutingTable(device.ID)
+	rs.ScheduleWalk(device.ID)
+	rs.ScheduleUpdateRoutingTable(device.ID)
 
 	rs.scheduler.Start()
 
@@ -54,22 +52,41 @@ func (rs deviceService) GetDevice(ctx context.Context, deviceId int) (entities.D
 		zap.String("journey", "GetDevice"),
 	)
 
-	return *rs.environment.GetDevice(deviceId), nil
+	return *rs.environment.GetDeviceById(deviceId), nil
 }
 
 func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceId int) () {
-	currentDevice := rs.environment.Devices[deviceId]
+	logger.Info("Init UpdateRoutingTable service",
+		zap.String("journey", "UpdateRoutingTable"),
+		zap.Int("deviceId", deviceId),
+	)
+
+	currentDevice := rs.environment.GetDeviceById(deviceId)
 
 	currentDevice.RemoveOwnRoutesFromTable()
 
 	devicesWithCommunication := rs.environment.ScanDevicesWithCommunication(deviceId)
+	routingTable := make(map[uuid.UUID]entities.Routing, 0)
 	for _, device := range devicesWithCommunication {
 		weight := currentDevice.GetDistanceTo(device.PosX, device.PosY)
-		currentDevice.AddRouting(uuid.New(), deviceId, device.ID, weight)
+		routingTable[uuid.New()] = entities.Routing{
+			Source: currentDevice.ID,
+			Target: device.ID,
+			Weight: weight,
+		}
+	}
+
+	currentDevice.AddRouting(routingTable)
+
+	fmt.Println("\n\n\n---------->> ", deviceId)
+	currentDevice.PrintPrettyTable()
+
+	if len(currentDevice.GetRoutingTable()) == 0 {
+		return
 	}
 
 	for _, device := range devicesWithCommunication {
-		device.UpdateRoutingTable(currentDevice.RoutingTable)
+		device.UpdateRoutingTable(currentDevice.GetRoutingTable())
 	}
 }
 
@@ -80,7 +97,7 @@ func (rs deviceService) ScheduleWalk(deviceId int) {
 			true,
 		),
 		gocron.NewTask(
-			rs.environment.Devices[deviceId].Walk,
+			rs.environment.GetDeviceById(deviceId).Walk,
 		),
 	)
 }
@@ -88,7 +105,7 @@ func (rs deviceService) ScheduleWalk(deviceId int) {
 func (rs deviceService) ScheduleUpdateRoutingTable(deviceId int) {
 	rs.scheduler.NewJob(
 		gocron.CronJob(
-			fmt.Sprintf("*/%d * * * * *", rs.environment.Devices[deviceId].MessageFreq),
+			fmt.Sprintf("*/%d * * * * *", rs.environment.GetDeviceById(deviceId).MessageFreq),
 			true,
 		),
 		gocron.NewTask(
@@ -100,7 +117,12 @@ func (rs deviceService) ScheduleUpdateRoutingTable(deviceId int) {
 }
 
 func (rs deviceService) GetRoute(tx context.Context, sourceId int, targetId int) ([]entities.Route, error) {
-	sourceDevice := rs.environment.Devices[sourceId]
+	logger.Info("Init GetRoute service",
+		zap.String("journey", "GetRoute"),
+	)
+
+	sourceDevice := rs.environment.GetDeviceById(sourceId)
+
 	if sourceDevice == nil {
 		logger.Error("Source device not found",
 			errors.New("source device not found"),
@@ -110,7 +132,7 @@ func (rs deviceService) GetRoute(tx context.Context, sourceId int, targetId int)
 	}
 
 	graph := &entities.Graph{}
-	for _, routing := range sourceDevice.RoutingTable {
+	for _, routing := range sourceDevice.GetRoutingTable() {
 		graph.AddEdge(routing.Source, routing.Target, routing.Weight)
 	}
 

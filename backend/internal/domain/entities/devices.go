@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 	"math"
+	"fmt"
+	"strings"
 )
 
 const (
@@ -16,7 +18,7 @@ const (
 
 type Device struct {
 	ID 			int
-	mu 			sync.Mutex
+	mu 			sync.RWMutex
 	Power		int
 	PosX		int
 	PosY		int
@@ -58,15 +60,13 @@ func (d *Device) CheckIfIsInTheCoverageArea(posX, posY int) bool {
 	return false
 }
 
-func (d *Device) AddRouting(routeUuid uuid.UUID, source int, target int, weight float64) {
+func (d *Device) AddRouting(routingTable map[uuid.UUID]Routing) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	d.RoutingTable[routeUuid] = Routing{
-		Source: source,
-		Target: target,
-		Weight: weight,
-	}
+	for key, value := range routingTable {
+		d.RoutingTable[key] = value
+}
 }
 
 func (d *Device) RemoveRoutings(routes []uuid.UUID) {
@@ -101,4 +101,27 @@ func (d *Device) UpdateRoutingTable(routes map[uuid.UUID]Routing) {
 	defer d.mu.Unlock()
 
 	d.RoutingTable = routes
+}
+
+func (d *Device) GetRoutingTable() map[uuid.UUID]Routing {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.RoutingTable
+}
+
+func (d *Device) PrintPrettyTable() {
+	table := d.GetRoutingTable()
+	if len(table) == 0 {
+		fmt.Println("No table found")
+		return
+	}
+
+	fmt.Printf("%s\n", strings.Repeat("-", 67))
+	fmt.Printf("| %-36s | %-6s | %-6s | %-6s | \n", "Route UUID", "Source", "Target", "Weight")
+	fmt.Printf("%s\n", strings.Repeat("-", 67))
+	for routeUuid, route := range table {
+		fmt.Printf("| %-36v | %-6d | %-6d | %-6.2v |\n", routeUuid, route.Source, route.Target, route.Weight)
+	}
+	fmt.Printf("%s\n", strings.Repeat("-", 67))
 }

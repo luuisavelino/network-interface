@@ -15,6 +15,27 @@ func NewEnvironment() Environment {
 	}
 }
 
+func (e *Environment) GetDevices() map[int]*Device {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return e.Devices
+}
+
+func (e *Environment) GetEnvironment() Environment {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return *e
+}
+
+func (e *Environment) GetDeviceById(deviceId int) *Device {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return e.Devices[deviceId]
+}
+
 func (e *Environment) AddDevice(device *Device) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -27,13 +48,6 @@ func (e *Environment) RemoveDevice(deviceId int) {
 	defer e.mu.Unlock()
 
 	delete(e.Devices, deviceId)
-}
-
-func (e *Environment) GetDevice(deviceId int) *Device {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	return e.Devices[deviceId]
 }
 
 func (e *Environment) ScanDevicesWithCommunication(deviceId int) []*Device {
