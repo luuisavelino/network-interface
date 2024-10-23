@@ -1,8 +1,7 @@
 <template>
   <div class="container">
-    <h2 class="my-3">Encontrar a melhor rota</h2>
+    <h3 class="my-3">Encontrar o caminho</h3>
     <form @submit.prevent="handleSubmit">
-      <!-- Campos Source e Target lado a lado -->
       <div class="form-container">
         <div class="form-group">
           <label for="source" class="form-label">Source</label>
@@ -15,13 +14,11 @@
         </div>
       </div>
 
-      <!-- Botão Search alinhado à direita -->
       <div class="submit-container">
         <button type="submit" class="btn btn-primary">Search</button>
       </div>
     </form>
 
-    <!-- Resposta do servidor -->
     <div v-if="responseData" class="alert alert-success mt-4">
       <strong>Resposta do servidor:</strong>
       <pre>{{ responseData }}</pre>
@@ -55,7 +52,6 @@ export default {
 </script>
 
 <style scoped>
-/* Estilo para os campos lado a lado */
 .form-container {
   margin-bottom: 24px;
   display: flex;
@@ -74,7 +70,6 @@ export default {
   width: 100%;
 }
 
-/* Botão Search alinhado à direita */
 .submit-container {
   display: flex;
   justify-content: flex-end;

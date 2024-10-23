@@ -68,7 +68,7 @@ export default {
   },
   beforeMount() {
     this.getDevices()
-    // this.loadDevices()
+    this.loadDevices()
   },
   beforeUnmount() {
     this.stopUpdates();
@@ -80,6 +80,7 @@ export default {
 .main-container {
   display: flex;
   height: 100vh;
+  margin: 12px;
 }
 
 .left-column {

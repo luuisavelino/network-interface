@@ -39,8 +39,8 @@ func (rs deviceService) InsertDevice(ctx context.Context, device entities.Device
 
 	rs.environment.AddDevice(&device)
 
-	rs.ScheduleWalk(device.ID)
-	rs.ScheduleUpdateRoutingTable(device.ID)
+	// rs.ScheduleWalk(device.ID)
+	// rs.ScheduleUpdateRoutingTable(device.ID)
 
 	rs.scheduler.Start()
 

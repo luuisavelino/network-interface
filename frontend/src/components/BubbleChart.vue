@@ -1,5 +1,5 @@
 <template>
-  <Bubble ref="bubble" :data="getChartData" :options="getChartOptions" style="height:1000px; width:1000px" />
+  <Bubble ref="bubble" :data="getChartData" :options="getChartOptions" style="height:600px; width:600px" />
 </template>
 
 <script>
@@ -65,7 +65,7 @@ export default {
     getChartOptions() {
       return {
         responsive: false,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
         scales: {
           x: {
             type: 'linear',
@@ -81,6 +81,9 @@ export default {
             max: 50,
             tickLength: 100,
           }
+        },
+        layout: {
+          autoPadding: false,
         },
         plugins: {
           tooltip: {
@@ -129,7 +132,7 @@ export default {
     calculateRadiusInChartUnits(baseRadius = 10) {
       const xScale = this.chart.scales.x;
       const xPixelsPerUnit = (xScale.width) / 50;
-      return (baseRadius * xPixelsPerUnit) / 1.35;
+      return (baseRadius * xPixelsPerUnit);
     },
     drawLines() {
       const ctx = this.chart.ctx;
@@ -152,12 +155,6 @@ export default {
     linesData: {
       handler() {
         this.drawLines();
-      },
-      deep: true
-    },
-    routesData: {
-      handler() {
-        this.chart = this.$refs.bubble.chart;
       },
       deep: true
     },

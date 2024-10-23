@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h2 class="my-4">Adicionar dispositivo</h2>
+    <h3 class="my-4">Adicionar dispositivo</h3>
     <form @submit.prevent="handleSubmit">
       <!-- Campo ID -->
       <div class="form-group">
