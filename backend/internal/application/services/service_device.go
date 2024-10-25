@@ -36,11 +36,16 @@ func (rs deviceService) InsertDevice(ctx context.Context, device entities.Device
 	)
 
 	device.RoutingTable = make(map[uuid.UUID]entities.Routing, 0)
+	device.Messages = entities.Messages{
+		All: make(map[uuid.UUID]entities.Message),
+		Read: make(map[uuid.UUID]entities.Message),
+		Unread: make(map[uuid.UUID]entities.Message),
+	}
 
 	rs.environment.AddDevice(&device)
 
-	rs.ScheduleWalk(device.ID)
-	rs.ScheduleUpdateRoutingTable(device.ID)
+	// rs.ScheduleWalk(device.GetDeviceID())
+	// rs.ScheduleUpdateRoutingTable(device.GetDeviceID())
 
 	rs.scheduler.Start()
 
@@ -63,15 +68,27 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceId int) ()
 
 	currentDevice := rs.environment.GetDeviceById(deviceId)
 
-	currentDevice.RemoveOwnRoutesFromTable()
+	routingTableToAdd := make(map[uuid.UUID]entities.Routing, 0)
+	for messageUuid, message := range currentDevice.GetUnreadMessages() {
+		if message.Topic == "update-routing" && message.Target == deviceId {
+			table := message.Content.(map[uuid.UUID]entities.Routing)
+			for routeUuid, routing := range table {
+				routingTableToAdd[routeUuid] = routing
+			}
+
+			currentDevice.ReadMessage(messageUuid)
+		}
+	}
+
+	currentDevice.RemoveFromTableRoutesWith(deviceId)
 
 	devicesWithCommunication := rs.environment.ScanDevicesWithCommunication(deviceId)
 	routingTable := make(map[uuid.UUID]entities.Routing, 0)
 	for _, device := range devicesWithCommunication {
 		weight := currentDevice.GetDistanceTo(device.PosX, device.PosY)
 		routingTable[uuid.New()] = entities.Routing{
-			Source: currentDevice.ID,
-			Target: device.ID,
+			Source: currentDevice.GetDeviceID(),
+			Target: device.GetDeviceID(),
 			Weight: weight,
 		}
 	}
@@ -83,34 +100,17 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceId int) ()
 	}
 
 	for _, device := range devicesWithCommunication {
-		device.UpdateRoutingTable(currentDevice.GetRoutingTable())
+		fmt.Println("Sending message to device", device.GetDeviceID())
+		device.AddMessage(
+			uuid.New(), 
+			entities.NewMessage(
+				"update-routing",
+				deviceId,
+				device.GetDeviceID(),
+				routingTable,
+			),
+		)
 	}
-}
-
-func (rs deviceService) ScheduleWalk(deviceId int) {
-	rs.scheduler.NewJob(
-		gocron.CronJob(
-			"*/30 * * * * *",
-			true,
-		),
-		gocron.NewTask(
-			rs.environment.GetDeviceById(deviceId).Walk,
-		),
-	)
-}
-
-func (rs deviceService) ScheduleUpdateRoutingTable(deviceId int) {
-	rs.scheduler.NewJob(
-		gocron.CronJob(
-			fmt.Sprintf("*/%d * * * * *", rs.environment.GetDeviceById(deviceId).MessageFreq),
-			true,
-		),
-		gocron.NewTask(
-			rs.UpdateRoutingTable,
-			context.Background(),
-			deviceId,
-		),
-	)
 }
 
 func (rs deviceService) GetRoute(tx context.Context, sourceId int, targetId int) ([]entities.Route, error) {
@@ -152,4 +152,35 @@ func (rs deviceService) GetRoute(tx context.Context, sourceId int, targetId int)
 	}
 
 	return routes, nil
+}
+
+func (rs deviceService) Send(deviceId int) {
+
+}
+
+
+func (rs deviceService) ScheduleWalk(deviceId int) {
+	rs.scheduler.NewJob(
+		gocron.CronJob(
+			"*/30 * * * * *",
+			true,
+		),
+		gocron.NewTask(
+			rs.environment.GetDeviceById(deviceId).Walk,
+		),
+	)
+}
+
+func (rs deviceService) ScheduleUpdateRoutingTable(deviceId int) {
+	rs.scheduler.NewJob(
+		gocron.CronJob(
+			fmt.Sprintf("*/%d * * * * *", rs.environment.GetDeviceById(deviceId).MessageFreq),
+			true,
+		),
+		gocron.NewTask(
+			rs.UpdateRoutingTable,
+			context.Background(),
+			deviceId,
+		),
+	)
 }

@@ -15,16 +15,23 @@ const (
 	maxPosY = 50
 )
 
-
 type Device struct {
-	ID 			int
-	mu 			sync.RWMutex
-	Power		int
-	PosX		int
-	PosY		int
+	ID 						int
+	mu 						sync.Mutex
+	Power					int
+	PosX					int
+	PosY					int
+	Messages			Messages
 	WalkingSpeed	int
 	MessageFreq		int
 	RoutingTable	map[uuid.UUID]Routing
+}
+
+func (d *Device) GetDeviceID() int {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.ID
 }
 
 func (d *Device) Walk() {
@@ -53,7 +60,9 @@ func (d *Device) CheckIfIsInTheCoverageArea(posX, posY int) bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if (math.Sqrt(math.Pow(float64(d.PosX-posX), 2) + math.Pow(float64(d.PosY-posY), 2)) <= float64(d.Power)) {
+	distance := math.Sqrt(math.Pow(float64(d.PosX-posX), 2) + math.Pow(float64(d.PosY-posY), 2))
+
+	if (distance <= float64(d.Power)) {
 		return true
 	}
 
@@ -66,7 +75,7 @@ func (d *Device) AddRouting(routingTable map[uuid.UUID]Routing) {
 
 	for key, value := range routingTable {
 		d.RoutingTable[key] = value
-}
+	}
 }
 
 func (d *Device) RemoveRoutings(routes []uuid.UUID) {
@@ -85,22 +94,15 @@ func (d *Device) GetDistanceTo(posX, posY int) float64 {
 	return math.Sqrt(math.Pow(float64(d.PosX-posX), 2) + math.Pow(float64(d.PosY-posY), 2))
 }
 
-func (d *Device) RemoveOwnRoutesFromTable() {
+func (d *Device) RemoveFromTableRoutesWith(deviceId int) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	for routeUuid, route := range d.RoutingTable {
-		if d.ID == route.Source || d.ID == route.Target {
+		if deviceId == route.Source || deviceId == route.Target {
 			delete(d.RoutingTable, routeUuid)
 		}
 	}
-}
-
-func (d *Device) UpdateRoutingTable(routes map[uuid.UUID]Routing) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	d.RoutingTable = routes
 }
 
 func (d *Device) GetRoutingTable() map[uuid.UUID]Routing {
@@ -108,6 +110,43 @@ func (d *Device) GetRoutingTable() map[uuid.UUID]Routing {
 	defer d.mu.Unlock()
 
 	return d.RoutingTable
+}
+
+func (d *Device) GetAllMessages() map[uuid.UUID]Message {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.Messages.All
+}
+
+func (d *Device) GetUnreadMessages() map[uuid.UUID]Message {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.Messages.Unread
+}
+
+func (d *Device) GetReadMessages() map[uuid.UUID]Message {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.Messages.Read
+}
+
+func (d *Device) ReadMessage(messageUuid uuid.UUID) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.Messages.Read[messageUuid] = d.Messages.Unread[messageUuid]
+	delete(d.Messages.Unread, messageUuid)
+}
+
+func (d *Device) AddMessage(messageUuid uuid.UUID, message Message) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.Messages.All[messageUuid] = message
+	d.Messages.Unread[messageUuid] = message
 }
 
 func (d *Device) PrintPrettyTable() {

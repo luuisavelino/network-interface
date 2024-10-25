@@ -40,7 +40,7 @@ func (e *Environment) AddDevice(device *Device) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	e.Devices[device.ID] = device
+	e.Devices[device.GetDeviceID()] = device
 }
 
 func (e *Environment) RemoveDevice(deviceId int) {
@@ -59,7 +59,7 @@ func (e *Environment) ScanDevicesWithCommunication(deviceId int) []*Device {
 	devicesWithCommunication := make([]*Device, 0)
 
 	for _, device := range e.Devices {
-		if device.ID == currentDevice.ID {
+		if device.GetDeviceID() == currentDevice.GetDeviceID() {
 			continue
 		}
 
