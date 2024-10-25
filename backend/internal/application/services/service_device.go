@@ -78,9 +78,6 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceId int) ()
 
 	currentDevice.AddRouting(routingTable)
 
-	fmt.Println("\n\n\n---------->> ", deviceId)
-	currentDevice.PrintPrettyTable()
-
 	if len(currentDevice.GetRoutingTable()) == 0 {
 		return
 	}

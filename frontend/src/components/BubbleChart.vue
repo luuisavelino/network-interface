@@ -1,5 +1,5 @@
 <template>
-  <Bubble ref="bubble" :data="getChartData" :options="getChartOptions" style="height:600px; width:600px" />
+  <Bubble ref="bubble" :data="getChartData" :options="getChartOptions" style="height:700px; width:700px" />
 </template>
 
 <script>

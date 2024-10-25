@@ -1,41 +1,51 @@
 <template>
-  <div class="main-container">
-    <div class="form-container left-column">
-      <AddDevice v-on:update-devices="getDevices"/>
-      <FindBestRoute v-on:get-route="getRoute"/>
+  <div class="flex m-8 h-screen">
+
+    <div class="w-2/5">
+      <HeaderTemplate @navigate="loadComponent" />
+      <div class="container mx-auto mt-5">
+        <component :is="currentComponent" @get-route="getRoute" @update-devices="getDevices"/>
+      </div>
     </div>
 
-    <div class="right-column">
-      <BubbleChart 
-        :routesData="routesData" :linesData="linesData" :showLines="showLines" 
-        class="max-size" />
+    <div class="w-3/5 flex flex-row-reverse">
+      <BubbleChart :routesData="routesData" :linesData="linesData" :showLines="showLines" />
     </div>
 
   </div>
 </template>
 
 <script>
-import BubbleChart from '../components/BubbleChart.vue';
-import AddDevice from '../components/AddDevice.vue';
-import FindBestRoute from '../components/FindBestRoute.vue';
 import servicesEnvironment from '../services/api/environment';
+
+import HeaderTemplate from '../components/HeaderTemplate.vue';
+import BubbleChart from '../components/BubbleChart.vue';
+import MessageTemplate from '../components/MessageTemplate.vue';
+import FindBestRoute from '../components/FindBestRoute.vue';
+import AddDevice from '../components/AddDevice.vue';
 
 export default {
   name: 'MainPage',
   components: {
+    HeaderTemplate,
     BubbleChart,
     AddDevice,
     FindBestRoute,
+    MessageTemplate,
   },
   data() {
     return {
       routesData: [],
       linesData: [],
       showLines: false,
-      intervalId: null
+      intervalId: null,
+      currentComponent: 'AddDevice'
     };
   },
   methods: {
+    loadComponent(component) {
+      this.currentComponent = component;
+    },
     getRoute(route) {
       this.linesData = route;
     },
@@ -75,41 +85,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-.main-container {
-  display: flex;
-  height: 100vh;
-  margin: 12px;
-}
-
-.left-column {
-  flex: 1;
-  padding: 20px;
-  box-sizing: border-box;
-  overflow-y: auto;
-  height: 100%;
-}
-
-.right-column {
-  flex: 2;
-  padding: 20px;
-  box-sizing: border-box;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.max-size {
-  width: 50vw;
-  height: 100vh;
-}
-
-.form-wrapper {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  box-sizing: border-box;
-}
-
-</style>
