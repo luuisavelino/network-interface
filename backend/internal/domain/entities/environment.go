@@ -2,17 +2,52 @@ package entities
 
 import (
 	"sync"
-)
+) 
 
 type Environment struct {
 	mu sync.Mutex
 	Devices map[int]*Device
+	Chart   map[int]*CoverageArea
+}
+
+type CoverageArea struct {
+	X int
+	Y int
+	R float64
 }
 
 func NewEnvironment() Environment {
 	return Environment{
 		Devices: make(map[int]*Device),
+		Chart: make(map[int]*CoverageArea),
 	}
+}
+
+func (e *Environment) SetDeviceInChart(deviceId, posX, posY int, r float64) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	e.Chart[deviceId] = &CoverageArea{
+		X: posX,
+		Y: posY,
+		R: r,
+	}
+}
+
+func (e *Environment) GetDeviceInChart(deviceId int) (int, int, float64) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	chart := e.Chart[deviceId]
+
+	return chart.X, chart.Y, chart.R
+}
+
+func (e *Environment) GetChart() map[int]*CoverageArea {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return e.Chart
 }
 
 func (e *Environment) GetDevices() map[int]*Device {

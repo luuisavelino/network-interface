@@ -1,25 +1,41 @@
 package entities
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type Messages struct {
-	All 	 map[uuid.UUID]Message
-	Read 	 map[uuid.UUID]Message
-	Unread map[uuid.UUID]Message
+	Sent []*Message
+	Received []*Message
 }
 
 type Message struct {
+	ID 			uuid.UUID
 	Topic   string
-	Source  int
-	Target  int
+	Sender  int
+	Destination  int
 	Content interface{}
+	read 		bool
+	Date time.Time
 }
 
 func NewMessage(topic string, source int, target int, content interface{}) Message {
 	return Message{
+		ID: uuid.New(),
 		Topic: topic,
-		Source: source,
-		Target: target,
+		Sender: source,
+		Destination: target,
 		Content: content,
+		read: false,
+		Date: time.Now(),
 	}
+}
+
+func (m *Message) Read() {
+	m.read = true
+}
+
+func (m *Message) IsRead() bool {
+	return m.read
 }

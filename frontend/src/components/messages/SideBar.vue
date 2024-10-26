@@ -12,7 +12,7 @@
     <ul>
       <li @click="select('Read')" class="cursor-pointer hover:bg-gray-300 p-2 rounded">Read</li>
       <li @click="select('Unread')" class="cursor-pointer hover:bg-gray-300 p-2 rounded">Unread</li>
-      <li @click="select('Enviados')" class="cursor-pointer hover:bg-gray-300 p-2 rounded">Sent</li>
+      <li @click="select('Sent')" class="cursor-pointer hover:bg-gray-300 p-2 rounded">Sent</li>
       <li @click="select('New')" class="cursor-pointer hover:bg-gray-300 mt-6 p-2 rounded">New</li>
     </ul>
   </div>
@@ -22,16 +22,21 @@
 export default {
   data() {
     return {
-      selectedDevice: 'Desktop', // Armazena o dispositivo selecionado
-      devices: ['Desktop', 'Tablet', 'Mobile'] // Lista de dispositivos disponíveis
+      selectedDevice: this.devices[0],
     };
+  },
+  props: {
+    devices: {
+      type: Array,
+      required: true
+    }
   },
   methods: {
     select(tab) {
       this.$emit('select', tab);
     },
     selectDevice() {
-      this.$emit('device', this.selectedDevice);
+      this.$emit('selected-device', this.selectedDevice);
     }
   }
 }

@@ -36,11 +36,6 @@ func (rs deviceService) InsertDevice(ctx context.Context, device entities.Device
 	)
 
 	device.RoutingTable = make(map[uuid.UUID]entities.Routing, 0)
-	device.Messages = entities.Messages{
-		All: make(map[uuid.UUID]entities.Message),
-		Read: make(map[uuid.UUID]entities.Message),
-		Unread: make(map[uuid.UUID]entities.Message),
-	}
 
 	rs.environment.AddDevice(&device)
 
@@ -69,14 +64,14 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceId int) ()
 	currentDevice := rs.environment.GetDeviceById(deviceId)
 
 	routingTableToAdd := make(map[uuid.UUID]entities.Routing, 0)
-	for messageUuid, message := range currentDevice.GetUnreadMessages() {
-		if message.Topic == "update-routing" && message.Target == deviceId {
+	for _, message := range currentDevice.GetUnreadMessages() {
+		if message.Topic == "update-routing" && message.Destination == deviceId {
 			table := message.Content.(map[uuid.UUID]entities.Routing)
 			for routeUuid, routing := range table {
 				routingTableToAdd[routeUuid] = routing
 			}
 
-			currentDevice.ReadMessage(messageUuid)
+			message.Read()
 		}
 	}
 
@@ -100,16 +95,15 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceId int) ()
 	}
 
 	for _, device := range devicesWithCommunication {
-		fmt.Println("Sending message to device", device.GetDeviceID())
-		device.AddMessage(
-			uuid.New(), 
-			entities.NewMessage(
-				"update-routing",
-				deviceId,
-				device.GetDeviceID(),
-				routingTable,
-			),
+		message := entities.NewMessage(
+			"update-routing",
+			deviceId,
+			device.GetDeviceID(),
+			routingTable,
 		)
+		
+		device.AddMessageToReceived(&message)
+		currentDevice.AddMessageToSent(&message)
 	}
 }
 

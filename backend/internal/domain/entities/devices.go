@@ -112,41 +112,53 @@ func (d *Device) GetRoutingTable() map[uuid.UUID]Routing {
 	return d.RoutingTable
 }
 
-func (d *Device) GetAllMessages() map[uuid.UUID]Message {
+func (d *Device) GetUnreadMessages() []*Message {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	return d.Messages.All
+	var unreadMessages []*Message
+	for _, message := range d.Messages.Received {
+		if !message.IsRead() {
+			unreadMessages = append(unreadMessages, message)
+		}
+	}
+
+	return unreadMessages
 }
 
-func (d *Device) GetUnreadMessages() map[uuid.UUID]Message {
+func (d *Device) GetReadMessages() []*Message {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	return d.Messages.Unread
+	var readMessages []*Message
+	for _, message := range d.Messages.Received {
+		if message.IsRead() {
+			readMessages = append(readMessages, message)
+		}
+	}
+
+	return readMessages
 }
 
-func (d *Device) GetReadMessages() map[uuid.UUID]Message {
+func (d *Device) GetMessagesSent() []*Message {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	return d.Messages.Read
+	return d.Messages.Sent
 }
 
-func (d *Device) ReadMessage(messageUuid uuid.UUID) {
+func (d *Device) AddMessageToSent(message *Message) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	d.Messages.Read[messageUuid] = d.Messages.Unread[messageUuid]
-	delete(d.Messages.Unread, messageUuid)
+	d.Messages.Sent = append(d.Messages.Sent, message)
 }
 
-func (d *Device) AddMessage(messageUuid uuid.UUID, message Message) {
+func (d *Device) AddMessageToReceived(message *Message) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	d.Messages.All[messageUuid] = message
-	d.Messages.Unread[messageUuid] = message
+	d.Messages.Received = append(d.Messages.Received, message)
 }
 
 func (d *Device) PrintPrettyTable() {

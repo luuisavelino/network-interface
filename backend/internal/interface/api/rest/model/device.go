@@ -35,12 +35,13 @@ func ToDeviceResponse(d entities.Device) DeviceResponse {
 		})
 	}
 
+
 	return DeviceResponse{
 		ID:           d.ID,
 		Power:        d.Power,
 		PosX:         d.PosX,
 		PosY:         d.PosY,
-		Messages:     d.Messages,
+		Messages:     ToMessagesResponse(d.Messages),
 		WalkingSpeed: d.WalkingSpeed,
 		MessageFreq:  d.MessageFreq,
 		RoutingTable: routingTable,
@@ -52,7 +53,7 @@ type DeviceResponse struct {
 	Power        int     `json:"r"`
 	PosX         int     `json:"x"`
 	PosY         int     `json:"y"`
-	Messages		 entities.Messages  `json:"messages"`
+	Messages		 MessagesResponse  `json:"messages"`
 	WalkingSpeed int     `json:"walking_speed"`
 	MessageFreq  int     `json:"message_freq"`
 	RoutingTable []RoutingResponse `json:"routing_table"`

@@ -18,6 +18,17 @@ const insertDevice = (data) => {
   return axios.request(config)
 }
 
+const getDeviceById = (deviceId) => {
+  const config = {
+    method: 'get',
+    url: API_URL + '/' + deviceId,
+    headers,
+  };
+
+  return axios.request(config)
+}
+
+
 const getRoute = (sourceId, targetId) => {
   const config = {
     method: 'get',
@@ -30,5 +41,6 @@ const getRoute = (sourceId, targetId) => {
 
 export default {
   insertDevice,
+  getDeviceById,
   getRoute,
 }

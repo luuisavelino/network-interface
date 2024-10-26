@@ -6,6 +6,9 @@
         <li @click="navigate('AddDevice')" 
             :class="{'text-blue-400 font-bold': selectedTab === 'AddDevice', 'text-white': selectedTab !== 'AddDevice'}"
             class="cursor-pointer transition duration-200">Add</li>
+        <li @click="navigate('ListDevice')"
+            :class="{'text-blue-400 font-bold': selectedTab === 'ListDevice', 'text-white': selectedTab !== 'ListDevice'}"
+            class="cursor-pointer transition duration-200">List</li>
         <li @click="navigate('FindBestRoute')" 
             :class="{'text-blue-400 font-bold': selectedTab === 'FindBestRoute', 'text-white': selectedTab !== 'FindBestRoute'}"
             class="cursor-pointer transition duration-200">Find</li>

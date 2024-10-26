@@ -31,7 +31,7 @@ export default {
     send() {
       if (this.message && this.selectedRecipient) {
         this.$emit('sendMessage', { recipient: this.selectedRecipient, message: this.message });
-        this.message = ''; // Limpa o campo de mensagem após enviar
+        this.message = '';
       } else {
         alert("Por favor, selecione um destinatário e digite uma mensagem.");
       }

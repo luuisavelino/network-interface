@@ -1,15 +1,15 @@
 <template>
-  <div class="flex m-8 h-screen">
+  <div class="flex m-8">
 
-    <div class="w-2/5">
+    <div class="w-1/2">
       <HeaderTemplate @navigate="loadComponent" />
       <div class="container mx-auto mt-5">
-        <component :is="currentComponent" @get-route="getRoute" @update-devices="getDevices"/>
+        <component :is="currentComponent" @get-route="getRoute" @update-devices="getDevices" :devices="devices"/>
       </div>
     </div>
 
-    <div class="w-3/5 flex flex-row-reverse">
-      <BubbleChart :routesData="routesData" :linesData="linesData" :showLines="showLines" />
+    <div class="w-1/2 flex flex-row-reverse">
+      <BubbleChart :devices="devices" :linesData="linesData" :showLines="showLines" />
     </div>
 
   </div>
@@ -20,9 +20,10 @@ import servicesEnvironment from '../services/api/environment';
 
 import HeaderTemplate from '../components/HeaderTemplate.vue';
 import BubbleChart from '../components/BubbleChart.vue';
-import MessageTemplate from '../components/MessageTemplate.vue';
+import MessageTemplate from '../components/messages/MessageTemplate.vue';
 import FindBestRoute from '../components/FindBestRoute.vue';
 import AddDevice from '../components/AddDevice.vue';
+import ListDevice from '@/components/ListDevice.vue';
 
 export default {
   name: 'MainPage',
@@ -32,10 +33,11 @@ export default {
     AddDevice,
     FindBestRoute,
     MessageTemplate,
+    ListDevice,
   },
   data() {
     return {
-      routesData: [],
+      devices: [],
       linesData: [],
       showLines: false,
       intervalId: null,
@@ -55,7 +57,7 @@ export default {
     getDevices() {
       servicesEnvironment.getEnvironment()
         .then(response => {
-          this.routesData = response.data.devices;
+          this.devices = response.data.devices;
         })
         .catch(error => {
           console.error('Erro ao buscar os dados:', error);

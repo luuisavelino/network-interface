@@ -1,5 +1,5 @@
 <template>
-  <Bubble ref="bubble" :data="getChartData" :options="getChartOptions" style="height:700px; width:700px" />
+  <Bubble ref="bubble" :data="getChartData" :options="getChartOptions" style="height:600px; width:600px" />
 </template>
 
 <script>
@@ -18,7 +18,7 @@ export default {
     Bubble
   },
   props: {
-    routesData: {
+    devices: {
       type: Object,
       required: true
     },
@@ -39,7 +39,7 @@ export default {
   },
   computed: {
     customData() {
-      return this.routesData.map(route => {
+      return this.devices.map(route => {
         return {
           backgroundColor: 'rgba(1, 0, 132, 0.6)',
           x: route.x,
