@@ -24,10 +24,19 @@ type deviceService struct {
 }
 
 type DeviceService interface {
+	GetDevices(ctx context.Context) (entities.Devices, error)
 	InsertDevice(ctx context.Context, device entities.Device) (entities.Device, error)
-	UpdateRoutingTable(ctx context.Context, deviceId int)
-	GetDevice(ctx context.Context, deviceId int) (entities.Device, error)
-	GetRoute(tx context.Context, sourceId int, targetId int) ([]entities.Route, error)
+	UpdateRoutingTable(ctx context.Context, deviceLabel string) error
+	GetDevice(ctx context.Context, deviceLabel string) (entities.Device, error)
+	GetRoute(tx context.Context, sourceId string, targetId string) ([]entities.Route, error)
+}
+
+func (rs deviceService) GetDevices(ctx context.Context) (entities.Devices, error) {
+	logger.Info("Init GetDevices service",
+		zap.String("journey", "GetDevices"),
+	)
+
+	return rs.environment.GetDevices(), nil
 }
 
 func (rs deviceService) InsertDevice(ctx context.Context, device entities.Device) (entities.Device, error) {
@@ -39,33 +48,43 @@ func (rs deviceService) InsertDevice(ctx context.Context, device entities.Device
 
 	rs.environment.AddDevice(&device)
 
-	// rs.ScheduleWalk(device.GetDeviceID())
-	// rs.ScheduleUpdateRoutingTable(device.GetDeviceID())
+	// rs.ScheduleWalk(device.GetDeviceLabel())
+	// rs.ScheduleUpdateRoutingTable(device.GetDeviceLabel())
 
 	rs.scheduler.Start()
 
 	return device, nil
 }
 
-func (rs deviceService) GetDevice(ctx context.Context, deviceId int) (entities.Device, error) {
+func (rs deviceService) GetDevice(ctx context.Context, deviceLabel string) (entities.Device, error) {
 	logger.Info("Init GetDevice service",
 		zap.String("journey", "GetDevice"),
 	)
 
-	return *rs.environment.GetDeviceById(deviceId), nil
+	device := rs.environment.GetDeviceByLabel(deviceLabel)
+	if device == nil {
+		return entities.Device{}, errors.New(fmt.Sprintf("device not found: %s", deviceLabel))
+	}
+
+	return *device, nil
 }
 
-func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceId int) () {
+func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceLabel string) error {
 	logger.Info("Init UpdateRoutingTable service",
 		zap.String("journey", "UpdateRoutingTable"),
-		zap.Int("deviceId", deviceId),
+		zap.String("deviceLabel", deviceLabel),
 	)
 
-	currentDevice := rs.environment.GetDeviceById(deviceId)
+	currentDevice := rs.environment.GetDeviceByLabel(deviceLabel)
+	if currentDevice == nil {
+		return errors.New(fmt.Sprintf("device not found: %s", deviceLabel))
+	}
+
+	fmt.Println("currentDevice :: ", currentDevice)
 
 	routingTableToAdd := make(map[uuid.UUID]entities.Routing, 0)
 	for _, message := range currentDevice.GetUnreadMessages() {
-		if message.Topic == "update-routing" && message.Destination == deviceId {
+		if message.Topic == "update-routing" && message.Destination == deviceLabel {
 			table := message.Content.(map[uuid.UUID]entities.Routing)
 			for routeUuid, routing := range table {
 				routingTableToAdd[routeUuid] = routing
@@ -75,15 +94,27 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceId int) ()
 		}
 	}
 
-	currentDevice.RemoveFromTableRoutesWith(deviceId)
+	currentDevice.AddRouting(routingTableToAdd)
+	currentDevice.RemoveFromTableRoutesWith(deviceLabel)
 
-	devicesWithCommunication := rs.environment.ScanDevicesWithCommunication(deviceId)
+	devicePosition := rs.environment.GetDeviceInChart(deviceLabel)
+	if devicePosition == nil {
+		return errors.New(fmt.Sprintf("device not found: %s", deviceLabel))
+	}
+
+	devicesWithCommunication := rs.environment.ScanDevicesWithCommunication(deviceLabel)
+
 	routingTable := make(map[uuid.UUID]entities.Routing, 0)
 	for _, device := range devicesWithCommunication {
-		weight := currentDevice.GetDistanceTo(device.PosX, device.PosY)
+		position := rs.environment.GetDeviceInChart(device.Label)
+
+		weight := rs.environment.GetDistanceTo(
+			devicePosition.X, devicePosition.Y, position.X, position.Y,
+		)
+
 		routingTable[uuid.New()] = entities.Routing{
-			Source: currentDevice.GetDeviceID(),
-			Target: device.GetDeviceID(),
+			Source: currentDevice.GetDeviceLabel(),
+			Target: device.GetDeviceLabel(),
 			Weight: weight,
 		}
 	}
@@ -91,35 +122,38 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceId int) ()
 	currentDevice.AddRouting(routingTable)
 
 	if len(currentDevice.GetRoutingTable()) == 0 {
-		return
+		return nil
 	}
+
+
+	currentDevice.PrintPrettyTable()
 
 	for _, device := range devicesWithCommunication {
 		message := entities.NewMessage(
 			"update-routing",
-			deviceId,
-			device.GetDeviceID(),
+			deviceLabel,
+			device.GetDeviceLabel(),
 			routingTable,
 		)
 		
 		device.AddMessageToReceived(&message)
 		currentDevice.AddMessageToSent(&message)
 	}
+
+	fmt.Println("currentDevice ADDED NEW MESSAGES", currentDevice)
+
+	return nil
 }
 
-func (rs deviceService) GetRoute(tx context.Context, sourceId int, targetId int) ([]entities.Route, error) {
+func (rs deviceService) GetRoute(tx context.Context, sourceId string, targetId string) ([]entities.Route, error) {
 	logger.Info("Init GetRoute service",
 		zap.String("journey", "GetRoute"),
 	)
 
-	sourceDevice := rs.environment.GetDeviceById(sourceId)
+	sourceDevice := rs.environment.GetDeviceByLabel(sourceId)
 
 	if sourceDevice == nil {
-		logger.Error("Source device not found",
-			errors.New("source device not found"),
-			zap.String("journey", "GetRoute"),
-		)
-		return nil, nil
+		return nil, errors.New(fmt.Sprintf("device not found: %s", sourceId))
 	}
 
 	graph := &entities.Graph{}
@@ -129,11 +163,7 @@ func (rs deviceService) GetRoute(tx context.Context, sourceId int, targetId int)
 
 	bestPaths := graph.DijkstraKBest(sourceId, targetId, 3)
 	if len(bestPaths) == 0 {
-		logger.Error("No path found",
-			errors.New("no path found"),
-			zap.String("journey", "GetRoute"),
-		)
-		return nil, nil
+		return nil, errors.New("no path found")
 	}
 
 	routes := make([]entities.Route, 0)
@@ -148,33 +178,31 @@ func (rs deviceService) GetRoute(tx context.Context, sourceId int, targetId int)
 	return routes, nil
 }
 
-func (rs deviceService) Send(deviceId int) {
+func (rs deviceService) Send(deviceLabel string) {}
 
-}
-
-
-func (rs deviceService) ScheduleWalk(deviceId int) {
+func (rs deviceService) ScheduleWalk(deviceLabel string) {
 	rs.scheduler.NewJob(
 		gocron.CronJob(
 			"*/30 * * * * *",
 			true,
 		),
 		gocron.NewTask(
-			rs.environment.GetDeviceById(deviceId).Walk,
+			rs.environment.Walk,
+			deviceLabel,
 		),
 	)
 }
 
-func (rs deviceService) ScheduleUpdateRoutingTable(deviceId int) {
+func (rs deviceService) ScheduleUpdateRoutingTable(deviceLabel string) {
 	rs.scheduler.NewJob(
 		gocron.CronJob(
-			fmt.Sprintf("*/%d * * * * *", rs.environment.GetDeviceById(deviceId).MessageFreq),
+			fmt.Sprintf("*/%d * * * * *", rs.environment.GetDeviceByLabel(deviceLabel).MessageFreq),
 			true,
 		),
 		gocron.NewTask(
 			rs.UpdateRoutingTable,
 			context.Background(),
-			deviceId,
+			deviceLabel,
 		),
 	)
 }

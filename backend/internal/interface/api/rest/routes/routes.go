@@ -10,10 +10,17 @@ func InitRoutes(r *gin.RouterGroup, controller controllers.ApiControllerInterfac
 
 	devices := v1.Group("/devices")
 	{
+			devices.GET("", controller.GetDevices)
 			devices.POST("", controller.InsertDevice)
-			devices.PATCH("/:id", controller.UpdateRoutingTable)
-			devices.GET("/:id", controller.GetDevice)
-			devices.GET("/route/:sourceId/:targetId", controller.GetRoute) // Changed the route to avoid conflict
+			devices.PATCH("/:label", controller.UpdateRoutingTable)
+			devices.GET("/:label", controller.GetDevice)
+			devices.GET("/route/:source/:target", controller.GetRoute)
+	}
+
+	chart := v1.Group("/chart")
+	{
+		chart.GET("", controller.GetChart)
+		chart.POST("/:deviceLabel", controller.SetDeviceInChart)
 	}
 
 	environment := v1.Group("/environment")

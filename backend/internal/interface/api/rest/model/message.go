@@ -29,10 +29,10 @@ func ToMessagesResponse(m entities.Messages) MessagesResponse {
 }
 
 type MessageResponse struct {
-	ID      string      `json:"id"`
+	ID      string      `json:"label"`
 	Topic   string      `json:"topic"`
-	Sender  int         `json:"sender"`
-	Destination  int    `json:"destination"`
+	Sender  string      `json:"sender"`
+	Destination  string `json:"destination"`
 	Content interface{} `json:"content"`
 	Read    bool        `json:"read"`
 	Date 	time.Time     `json:"date"`

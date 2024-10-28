@@ -14,6 +14,7 @@ type ApiControllerInterface interface {
 	RoutingsControllerInterface
 	DevicesControllerInterface
 	EnvironmentControllerInterface
+	ChartControllerInterface
 }
 
 type RoutingsControllerInterface interface {
@@ -21,6 +22,7 @@ type RoutingsControllerInterface interface {
 }
 
 type DevicesControllerInterface interface {
+	GetDevices(c *gin.Context)
 	InsertDevice(c *gin.Context)
 	GetDevice(c *gin.Context)
 	UpdateRoutingTable(c *gin.Context)
@@ -29,6 +31,11 @@ type DevicesControllerInterface interface {
 
 type EnvironmentControllerInterface interface {
 	GetEnvironment(c *gin.Context)
+}
+
+type ChartControllerInterface interface {
+	GetChart(c *gin.Context)
+	SetDeviceInChart(c *gin.Context)
 }
 
 func NewApiController(apiServices services.ApiServices) ApiControllerInterface {

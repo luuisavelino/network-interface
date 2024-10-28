@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-full w-full">
-    <SideBar @select="selectTab" @selected-device="selectedDevice" :devices="recipients"/>
+    <SideBar @select="selectTab" @selected-device="selectedDevice" :devices="devicesLabel"/>
     <div class="flex-grow p-4">
       <div class="border rounded-lg p-4">
         <h2 class="text-xl font-bold mb-4">{{ currentTab }}</h2>
@@ -14,7 +14,7 @@
           <MessageList :type="'sent'" :messages="filteredMessages('sent', false)" />
         </div>
         <div v-if="currentTab === 'New'">
-          <MessageBox :recipients="recipients" @sendMessage="sendMessage" />
+          <MessageBox :recipients="devices" @sendMessage="sendMessage" />
         </div>
       </div>
     </div>
@@ -26,6 +26,8 @@ import SideBar from './SideBar.vue';
 import MessageList from './MessageList.vue';
 import MessageBox from './MessageBox.vue';
 
+import servicesDevices from '@/services/api/devices';
+
 export default {
   components: {
     SideBar,
@@ -33,7 +35,7 @@ export default {
     MessageBox,
   },
   props: {
-    devices: {
+    devicesLabel: {
       type: Array,
       required: true
     }
@@ -41,13 +43,9 @@ export default {
   data() {
     return {
       currentTab: 'New',
-      currentDevice: this.devices[0]?.label,
+      currentDevice: this.devicesLabel[0],
+      devices: {}
     };
-  },
-  computed: {
-    recipients() {
-      return this.devices?.map(device => device?.label);
-    },
   },
   methods: {
     selectTab(tab) {
@@ -57,13 +55,16 @@ export default {
       this.currentDevice = device;
     },
     filteredMessages(type, status) {
-      const device = this.devices.filter(device => device?.label === this.currentDevice)[0];
-
-      if (type === 'sent') {
-        return device?.messages.sent;
+      if (!this.devices[this.currentDevice]) {
+        servicesDevices.getDeviceById(this.currentDevice)
+        .then(response => this.devices[this.currentDevice] = response.data);
       }
 
-      return device?.messages.received.filter(message => message.read === status);
+      if (type === 'sent') {
+        return this.devices[this.currentDevice]?.messages.sent;
+      }
+
+      return this.devices[this.currentDevice]?.messages.received.filter(message => message.read === status);
     }
   }
 }

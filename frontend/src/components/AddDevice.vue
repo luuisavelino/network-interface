@@ -3,8 +3,8 @@
     <h3 class="text-2xl font-bold mb-4">Adicionar dispositivo</h3>
     <form @submit.prevent="handleSubmit">
       <div class="mb-4">
-        <label for="id" class="block text-sm font-medium text-gray-700">ID</label>
-        <input type="number" v-model="formData.id" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="id" required>
+        <label for="label" class="block text-sm font-medium text-gray-700">Label</label>
+        <input type="text" v-model="formData.label" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="label" required>
       </div>
 
       <div class="flex gap-4 mb-4">
@@ -14,13 +14,8 @@
         </div>
 
         <div class="flex-1">
-          <label for="pos_x" class="block text-sm font-medium text-gray-700">Posição X</label>
-          <input type="number" v-model="formData.pos_x" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="pos_x" required>
-        </div>
-
-        <div class="flex-1">
-          <label for="pos_y" class="block text-sm font-medium text-gray-700">Posição Y</label>
-          <input type="number" v-model="formData.pos_y" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="pos_y" required>
+          <label for="battery" class="block text-sm font-medium text-gray-700">Battery</label>
+          <input type="number" v-model="formData.battery" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="battery" required>
         </div>
       </div>
 
@@ -56,10 +51,9 @@ export default {
   data() {
     return {
       formData: {
-        id: null,
+        label: null,
         power: null,
-        pos_x: null,
-        pos_y: null,
+        battery: null,
         walking_speed: null,
         message_freq: null
       },
@@ -76,10 +70,9 @@ export default {
       }
 
       this.formData = {
-        id: null,
+        label: null,
         power: null,
-        pos_x: null,
-        pos_y: null,
+        battery: null,
         walking_speed: null,
         message_freq: null
       }

@@ -5,20 +5,16 @@ import (
 )
 
 type DeviceRequest struct {
-	ID           int     `json:"id" binding:"required"`
+	Label        string  `json:"label" binding:"required"`
 	Power        int     `json:"power" binding:"required"`
-	PosX         int     `json:"pos_x" binding:"required"`
-	PosY         int     `json:"pos_y" binding:"required"`
 	WalkingSpeed int     `json:"walking_speed" binding:"required"`
 	MessageFreq  int     `json:"message_freq" binding:"required"`
 }
 
 func (r DeviceRequest) ToDomain() entities.Device {
 	return entities.Device{
-		ID:           r.ID,
+		Label:           r.Label,
 		Power:        r.Power,
-		PosX:         r.PosX,
-		PosY:         r.PosY,
 		WalkingSpeed: r.WalkingSpeed,
 		MessageFreq:  r.MessageFreq,
 	}
@@ -35,12 +31,11 @@ func ToDeviceResponse(d entities.Device) DeviceResponse {
 		})
 	}
 
-
 	return DeviceResponse{
-		ID:           d.ID,
+		Label:        d.Label,
 		Power:        d.Power,
-		PosX:         d.PosX,
-		PosY:         d.PosY,
+		Battery:      100,
+		Status: 		 "active",
 		Messages:     ToMessagesResponse(d.Messages),
 		WalkingSpeed: d.WalkingSpeed,
 		MessageFreq:  d.MessageFreq,
@@ -48,13 +43,23 @@ func ToDeviceResponse(d entities.Device) DeviceResponse {
 	}
 }
 
+func ToDevicesResponse(d entities.Devices) []DeviceResponse {
+	devices := make([]DeviceResponse, 0)
+
+	for _, device := range d {
+		devices = append(devices, ToDeviceResponse(*device))
+	}
+
+	return devices
+}
+
 type DeviceResponse struct {
-	ID           int     `json:"label"`
-	Power        int     `json:"r"`
-	PosX         int     `json:"x"`
-	PosY         int     `json:"y"`
+	Label        string  					 `json:"label"`
+	Power        int     					 `json:"power"`
+	Battery			 int     					 `json:"battery"`
+	Status			 string						 `json:"status"`
 	Messages		 MessagesResponse  `json:"messages"`
-	WalkingSpeed int     `json:"walking_speed"`
-	MessageFreq  int     `json:"message_freq"`
+	WalkingSpeed int     					 `json:"walking_speed"`
+	MessageFreq  int     					 `json:"message_freq"`
 	RoutingTable []RoutingResponse `json:"routing_table"`
 }

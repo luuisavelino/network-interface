@@ -13,14 +13,14 @@ type Messages struct {
 type Message struct {
 	ID 			uuid.UUID
 	Topic   string
-	Sender  int
-	Destination  int
+	Sender  string
+	Destination  string
 	Content interface{}
 	read 		bool
 	Date time.Time
 }
 
-func NewMessage(topic string, source int, target int, content interface{}) Message {
+func NewMessage(topic string, source string, target string, content interface{}) Message {
 	return Message{
 		ID: uuid.New(),
 		Topic: topic,

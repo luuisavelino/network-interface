@@ -7,6 +7,16 @@ const headers =  {
   'Content-Type': 'application/json'
 }
 
+const getDevices = () => {
+  const config = {
+    method: 'get',
+    url: API_URL,
+    headers,
+  };
+
+  return axios.request(config)
+}
+
 const insertDevice = (data) => {
   const config = {
     method: 'post',
@@ -40,6 +50,7 @@ const getRoute = (sourceId, targetId) => {
 }
 
 export default {
+  getDevices,
   insertDevice,
   getDeviceById,
   getRoute,

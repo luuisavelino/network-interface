@@ -5,27 +5,27 @@ import (
 )
 
 type Edge struct {
-	to     int
+	to     string
 	weight float64
 }
 
 type Graph struct {
-	nodes map[int][]Edge
+	nodes map[string][]Edge
 }
 
-func (g *Graph) AddEdge(from, to int, weight float64) {
+func (g *Graph) AddEdge(from, to string, weight float64) {
 	if g.nodes == nil {
-		g.nodes = make(map[int][]Edge)
+		g.nodes = make(map[string][]Edge)
 	}
 	g.nodes[from] = append(g.nodes[from], Edge{to, weight})
 	g.nodes[to] = append(g.nodes[to], Edge{from, weight})
 }
 
 type Item struct {
-	node     int
+	node     string
 	priority float64
 	index    int
-	path     []int
+	path     []string
 }
 
 type PriorityQueue []*Item
@@ -59,12 +59,12 @@ func (pq *PriorityQueue) Pop() interface{} {
 	return item
 }
 
-func (g *Graph) DijkstraKBest(start, target int, k int) []Path {
+func (g *Graph) DijkstraKBest(start, target string, k int) []Path {
 	var results []Path
 	pq := make(PriorityQueue, 0)
 	heap.Init(&pq)
 
-	heap.Push(&pq, &Item{node: start, priority: 0, path: []int{start}})
+	heap.Push(&pq, &Item{node: start, priority: 0, path: []string{start}})
 
 	for pq.Len() > 0 && len(results) < k {
 		current := heap.Pop(&pq).(*Item)
@@ -84,7 +84,7 @@ func (g *Graph) DijkstraKBest(start, target int, k int) []Path {
 		}
 
 		for _, edge := range g.nodes[currentNode] {
-			newPath := append([]int(nil), currentPath...)
+			newPath := append([]string(nil), currentPath...)
 			newPath = append(newPath, edge.to)
 			heap.Push(&pq, &Item{
 				node:     edge.to,
@@ -102,7 +102,7 @@ type Path struct {
 	Weight float64
 }
 
-func formatPath(path []int, g *Graph) []Route {
+func formatPath(path []string, g *Graph) []Route {
 	var formattedPath []Route
 	for i := 0; i < len(path)-1; i++ {
 		formattedPath = append(formattedPath, Route{

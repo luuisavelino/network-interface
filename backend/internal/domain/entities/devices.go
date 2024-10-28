@@ -2,71 +2,28 @@ package entities
 
 import (
 	"github.com/google/uuid"
-	"math/rand"
 	"sync"
-	"time"
-	"math"
 	"fmt"
 	"strings"
 )
 
-const (
-	maxPosX = 50
-	maxPosY = 50
-)
+type Devices map[string]*Device
 
 type Device struct {
-	ID 						int
+	Label 				string
 	mu 						sync.Mutex
 	Power					int
-	PosX					int
-	PosY					int
 	Messages			Messages
 	WalkingSpeed	int
 	MessageFreq		int
 	RoutingTable	map[uuid.UUID]Routing
 }
 
-func (d *Device) GetDeviceID() int {
+func (d *Device) GetDeviceLabel() string {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	return d.ID
-}
-
-func (d *Device) Walk() {
-	rand.Seed(time.Now().UnixNano())
-
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	d.PosX += (rand.Intn(3) - 1) * d.WalkingSpeed
-	d.PosY += (rand.Intn(3) - 1) * d.WalkingSpeed
-
-	if d.PosX > maxPosX {
-		d.PosX = maxPosX
-	} else if d.PosX < 0 {
-		d.PosX = 0
-	}
-
-	if d.PosY > maxPosY {
-		d.PosY = maxPosY
-	} else if d.PosY < 0 {
-		d.PosY = 0
-	}
-}
-
-func (d *Device) CheckIfIsInTheCoverageArea(posX, posY int) bool {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	distance := math.Sqrt(math.Pow(float64(d.PosX-posX), 2) + math.Pow(float64(d.PosY-posY), 2))
-
-	if (distance <= float64(d.Power)) {
-		return true
-	}
-
-	return false
+	return d.Label
 }
 
 func (d *Device) AddRouting(routingTable map[uuid.UUID]Routing) {
@@ -87,19 +44,12 @@ func (d *Device) RemoveRoutings(routes []uuid.UUID) {
 	}	
 }
 
-func (d *Device) GetDistanceTo(posX, posY int) float64 {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	return math.Sqrt(math.Pow(float64(d.PosX-posX), 2) + math.Pow(float64(d.PosY-posY), 2))
-}
-
-func (d *Device) RemoveFromTableRoutesWith(deviceId int) {
+func (d *Device) RemoveFromTableRoutesWith(deviceLabel string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	for routeUuid, route := range d.RoutingTable {
-		if deviceId == route.Source || deviceId == route.Target {
+		if deviceLabel == route.Source || deviceLabel == route.Target {
 			delete(d.RoutingTable, routeUuid)
 		}
 	}
@@ -172,7 +122,7 @@ func (d *Device) PrintPrettyTable() {
 	fmt.Printf("| %-36s | %-6s | %-6s | %-6s | \n", "Route UUID", "Source", "Target", "Weight")
 	fmt.Printf("%s\n", strings.Repeat("-", 67))
 	for routeUuid, route := range table {
-		fmt.Printf("| %-36v | %-6d | %-6d | %-6.2v |\n", routeUuid, route.Source, route.Target, route.Weight)
+		fmt.Printf("| %-36v | %-6s | %-6s | %-6.2v |\n", routeUuid, route.Source, route.Target, route.Weight)
 	}
 	fmt.Printf("%s\n", strings.Repeat("-", 67))
 }
