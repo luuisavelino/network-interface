@@ -3,8 +3,8 @@ package model
 import "github.com/luuisavelino/network-interface/internal/domain/entities"
 
 type RouteResponse struct {
-	Source int `json:"source"`
-	Target int `json:"target"`
+	Source string `json:"source"`
+	Target string `json:"target"`
 }
 
 func ToRouteResponse(routes []entities.Route) []RouteResponse {

@@ -8,8 +8,8 @@ type RoutingTableResponse struct {
 }
 
 type RoutingResponse struct {
-	Source  int    `json:"source"`
-	Target  int    `json:"target"`
+	Source  string    `json:"source"`
+	Target  string    `json:"target"`
 	Weight  float64 `json:"weight"`
 }
 

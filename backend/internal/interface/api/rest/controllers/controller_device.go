@@ -6,8 +6,29 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"github.com/luuisavelino/network-interface/internal/interface/api/rest/model"
-	"strconv"
 )
+
+func (sc *apiControllerInterface) GetDevices(c *gin.Context) {
+	logger.Info("Init GetDevices controller",
+		zap.String("journey", "GetDevices"),
+	)
+
+	devices, err := sc.services.Device.GetDevices(c.Request.Context())
+	if err != nil {
+		logger.Error("Error to get devices",
+			err,
+			zap.String("journey", "GetDevices"),
+		)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error", "message": "Error to get devices",
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, model.ToDevicesResponse(devices))
+}
 
 func (sc *apiControllerInterface) InsertDevice(c *gin.Context) {
 	logger.Info("Init InsertDevice controller",
@@ -50,30 +71,18 @@ func (sc *apiControllerInterface) GetDevice(c *gin.Context) {
 		zap.String("journey", "GetDevice"),
 	)
 
-	id := c.Param("id")
-	deviceId, err := strconv.Atoi(id)
-	if err != nil {
-		logger.Error("Error to get device id",
-			err,
-			zap.String("journey", "GetDevice"),
-		)
+	deviceLabel := c.Param("label")
 
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": "error", "message": "Error to get device id",
-		})
-
-		return
-	}
-
-	device, err := sc.services.Device.GetDevice(c.Request.Context(), deviceId)
+	device, err := sc.services.Device.GetDevice(c.Request.Context(), deviceLabel)
 	if err != nil {
 		logger.Error("Error to get device",
 			err,
 			zap.String("journey", "GetDevice"),
+			zap.String("deviceLabel", deviceLabel),
 		)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": "error", "message": "Error to get device",
+			"status": "error", "message": err.Error(),
 		})
 
 		return
@@ -87,22 +96,22 @@ func (sc *apiControllerInterface) UpdateRoutingTable(c *gin.Context) {
 		zap.String("journey", "UpdateRoutingTable"),
 	)
 
-	id := c.Param("id")
-	deviceId, err := strconv.Atoi(id)
+	deviceLabel := c.Param("label")
+
+	err := sc.services.Device.UpdateRoutingTable(c.Request.Context(), deviceLabel)
 	if err != nil {
-		logger.Error("Error to get device id",
+		logger.Error("Error to update routing table",
 			err,
 			zap.String("journey", "UpdateRoutingTable"),
+			zap.String("deviceLabel", deviceLabel),
 		)
 
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": "error", "message": "Error to get device id",
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error", "message": "Error to update routing table",
 		})
 
 		return
 	}
-
-	sc.services.Device.UpdateRoutingTable(c.Request.Context(), deviceId)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success", "message": "Routing table updated",
@@ -114,37 +123,10 @@ func (sc *apiControllerInterface) GetRoute(c *gin.Context) {
 		zap.String("journey", "GetRoute"),
 	)
 
-	id := c.Param("sourceId")
-	sourceId, err := strconv.Atoi(id)
-	if err != nil {
-		logger.Error("Error to get source id",
-			err,
-			zap.String("journey", "GetRoute"),
-		)
+	source := c.Param("source")
+	target := c.Param("target")
 
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": "error", "message": "Error to get device id",
-		})
-
-		return
-	}
-
-	id = c.Param("targetId")
-	targetId, err := strconv.Atoi(id)
-	if err != nil {
-		logger.Error("Error to get target id",
-			err,
-			zap.String("journey", "GetRoute"),
-		)
-
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status": "error", "message": "Error to get device id",
-		})
-
-		return
-	}
-
-	routes, err := sc.services.Device.GetRoute(c.Request.Context(), sourceId, targetId)
+	routes, err := sc.services.Device.GetRoute(c.Request.Context(), source, target)
 	if err != nil {
 		logger.Error("Error to get route",
 			err,
@@ -152,7 +134,7 @@ func (sc *apiControllerInterface) GetRoute(c *gin.Context) {
 		)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": "error", "message": "Error to get route",
+			"status": "error", "message": err.Error(),
 		})
 
 		return

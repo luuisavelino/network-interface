@@ -18,7 +18,7 @@ export default {
     Bubble
   },
   props: {
-    routesData: {
+    chartData: {
       type: Object,
       required: true
     },
@@ -39,14 +39,15 @@ export default {
   },
   computed: {
     customData() {
-      return this.routesData.map(route => {
+      return Object.keys(this.chartData).map(key => {
+        const route = this.chartData[key];
         return {
           backgroundColor: 'rgba(1, 0, 132, 0.6)',
           x: route.x,
           y: route.y,
           r: this.calculateRadiusInChartUnits(route.r),
-          label: route.label
-        }
+          label: key
+        };
       });
     },
     getChartData() {
@@ -127,7 +128,7 @@ export default {
       const r = Math.floor(Math.random() * 256);
       const g = Math.floor(Math.random() * 256);
       const b = Math.floor(Math.random() * 256);
-      return `rgb(${r}, ${g}, ${b}, 0.6)`;
+      return `rgb(${r}, ${g}, ${b}, 0.4)`;
     },
     calculateRadiusInChartUnits(baseRadius = 10) {
       const xScale = this.chart.scales.x;
