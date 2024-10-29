@@ -120,15 +120,14 @@ func (e *Environment) RemoveDevice(deviceLabel string) {
 	delete(e.Devices, deviceLabel)
 }
 
-func (e *Environment) ScanDevicesWithCommunication(deviceLabel string) []*Device {
+func (e *Environment) ScanDeviceNearby(deviceLabel string) []*Device {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	devicesWithCommunication := make([]*Device, 0)
+	devicesNearby := make([]*Device, 0)
 	sourcePosisiton := e.Chart[deviceLabel]
 
 	for _, device := range e.Devices {
-		fmt.Println("device", device)
 		label := device.GetDeviceLabel()
 		if label == deviceLabel {
 			continue
@@ -136,14 +135,27 @@ func (e *Environment) ScanDevicesWithCommunication(deviceLabel string) []*Device
 		
 		targetPosition := e.Chart[label]
 
-		fmt.Println("deviceLabel", label)
-
 		distance := e.GetDistanceTo(sourcePosisiton.X, sourcePosisiton.Y, targetPosition.X, targetPosition.Y)
 
-		if e.CheckIfIsInTheCoverageArea(distance, sourcePosisiton.R) && e.CheckIfIsInTheCoverageArea(distance, targetPosition.R) {
-			devicesWithCommunication = append(devicesWithCommunication, device)
+		if e.CheckIfIsInTheCoverageArea(distance, sourcePosisiton.R) {
+			devicesNearby = append(devicesNearby, device)
 		}
 	}
 
-	return devicesWithCommunication
+	return devicesNearby
+}
+
+func (e *Environment) CheckIfDeviceIsNearby(deviceLabel, target string) bool {
+	devicesNearby := e.ScanDeviceNearby(deviceLabel)
+	if len(devicesNearby) == 0 {
+		return false
+	}
+
+	for _, device := range devicesNearby {
+		if device.GetDeviceLabel() == target {
+			return true
+		}
+	}
+
+	return false
 }
