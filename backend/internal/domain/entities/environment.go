@@ -5,7 +5,6 @@ import (
 	"math"
 	"math/rand"
 	"time"
-	"fmt"
 )
 
 const (
@@ -132,7 +131,7 @@ func (e *Environment) ScanDeviceNearby(deviceLabel string) []*Device {
 		if label == deviceLabel {
 			continue
 		}
-		
+
 		targetPosition := e.Chart[label]
 
 		distance := e.GetDistanceTo(sourcePosisiton.X, sourcePosisiton.Y, targetPosition.X, targetPosition.Y)

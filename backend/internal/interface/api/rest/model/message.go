@@ -41,10 +41,10 @@ type MessageResponse struct {
 func ToMessageResponse(m entities.Message) MessageResponse {
 	var content string
 	switch m.Topic {
-	case  "update-routing" :
-		content = "Update routing table"
-	default:
+	case  "user-message" :
 		content = m.Content.(string)
+	default:
+		content = m.Topic
 	}
 
 	return MessageResponse{
