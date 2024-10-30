@@ -16,7 +16,44 @@ type Device struct {
 	Messages			Messages
 	WalkingSpeed	int
 	MessageFreq		int
+	DevicesWithConn	[]string
+	ScanningDevices	bool
 	RoutingTable	map[uuid.UUID]Routing
+}
+
+func (d *Device) IsScanningDevices() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.ScanningDevices
+}
+
+func (d *Device) SetScanningDevices(scanning bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.ScanningDevices = scanning
+}
+
+func (d *Device) GetDevicesWithConn() []string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.DevicesWithConn
+}
+
+func (d *Device) SetDeviceWithConn(device string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.DevicesWithConn = append(d.DevicesWithConn, device)
+}
+
+func (d *Device) ResetDeviceConn() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.DevicesWithConn = []string{}
 }
 
 func (d *Device) GetDeviceLabel() string {
