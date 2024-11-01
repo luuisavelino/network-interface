@@ -68,7 +68,7 @@ func (rs deviceService) InsertDevice(ctx context.Context, device entities.Device
 
 	rs.ScheduleReadMessages(label)
 	rs.ScheduleUpdateRoutingTable(label)
-	// rs.ScheduleWalk(label)
+	rs.ScheduleWalk(label)
 
 	rs.scheduler.Start()
 
@@ -300,7 +300,7 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceLabel stri
 		rs.SendMessage(currentDevice, device, message)
 	}
 
-	timeout := time.After(30 * time.Second)
+	timeout := time.After(15 * time.Second)
 
 	for {
 		select {
@@ -413,7 +413,7 @@ func (rs deviceService) ScheduleWalk(deviceLabel string) {
 	)
 
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(35 * time.Second)
 		defer ticker.Stop()
 
 		for {
@@ -432,7 +432,7 @@ func (rs deviceService) ScheduleUpdateRoutingTable(deviceLabel string) {
 	)
 
 	go func() {
-		ticker := time.NewTicker(30 * time.Second)
+		ticker := time.NewTicker(20 * time.Second)
 		defer ticker.Stop()
 
 		for {

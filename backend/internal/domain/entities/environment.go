@@ -61,7 +61,10 @@ func (e *Environment) Walk(deviceLabel string) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	device := e.Chart[deviceLabel]
+	device, exists := e.Chart[deviceLabel]
+	if !exists {
+		return
+	}
 
 	device.X += (rand.Intn(3) - 1) * 1
 	device.Y += (rand.Intn(3) - 1) * 1
@@ -124,7 +127,10 @@ func (e *Environment) ScanDeviceNearby(deviceLabel string) []*Device {
 	defer e.mu.Unlock()
 
 	devicesNearby := make([]*Device, 0)
-	sourcePosisiton := e.Chart[deviceLabel]
+	sourcePosititon, exists := e.Chart[deviceLabel]
+	if !exists {
+		return devicesNearby
+	}
 
 	for _, device := range e.Devices {
 		label := device.GetDeviceLabel()
@@ -137,9 +143,9 @@ func (e *Environment) ScanDeviceNearby(deviceLabel string) []*Device {
 			continue
 		}
 
-		distance := e.GetDistanceTo(sourcePosisiton.X, sourcePosisiton.Y, targetPosition.X, targetPosition.Y)
+		distance := e.GetDistanceTo(sourcePosititon.X, sourcePosititon.Y, targetPosition.X, targetPosition.Y)
 
-		if e.CheckIfIsInTheCoverageArea(distance, sourcePosisiton.R) {
+		if e.CheckIfIsInTheCoverageArea(distance, sourcePosititon.R) {
 			devicesNearby = append(devicesNearby, device)
 		}
 	}
