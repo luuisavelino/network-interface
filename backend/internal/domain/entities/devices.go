@@ -10,164 +10,155 @@ import (
 type Devices map[string]*Device
 
 type Device struct {
-	Label 				string
-	mu 						sync.Mutex
-	Power					int
-	Status				bool
-	Messages			Messages
-	WalkingSpeed	int
-	MessageFreq		int
-	DevicesWithConn	[]string
-	ScanningDevices	bool
-	RoutingTable	map[uuid.UUID]Routing
+	Label              string
+	mu                 sync.Mutex
+	Power              int
+	Status             bool
+	Messages           Messages
+	WalkingSpeed       int
+	MessageFreq        int
+	DevicesWithConn    []string
+	ScanningDevices    bool
+	RoutingTable       map[uuid.UUID]Routing
 }
 
 func (d *Device) GetStatus() bool {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	return d.Status
+	status := d.Status
+	d.mu.Unlock()
+	return status
 }
 
 func (d *Device) SetStatus(status bool) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	d.Status = status
+	d.mu.Unlock()
 }
 
 func (d *Device) ResetRoutingTable() {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	d.RoutingTable = make(map[uuid.UUID]Routing)
+	d.mu.Unlock()
 }
 
 func (d *Device) IsScanningDevices() bool {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	return d.ScanningDevices
+	scanning := d.ScanningDevices
+	d.mu.Unlock()
+	return scanning
 }
 
 func (d *Device) SetScanningDevices(scanning bool) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	d.ScanningDevices = scanning
+	d.mu.Unlock()
 }
 
 func (d *Device) GetDevicesWithConn() []string {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	return d.DevicesWithConn
+	devicesWithConn := make([]string, len(d.DevicesWithConn))
+	copy(devicesWithConn, d.DevicesWithConn)
+	d.mu.Unlock()
+	return devicesWithConn
 }
 
 func (d *Device) SetDeviceWithConn(device string) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	d.DevicesWithConn = append(d.DevicesWithConn, device)
+	d.mu.Unlock()
 }
 
 func (d *Device) ResetDeviceConn() {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	d.DevicesWithConn = []string{}
+	d.mu.Unlock()
 }
 
 func (d *Device) GetDeviceLabel() string {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	return d.Label
+	label := d.Label
+	d.mu.Unlock()
+	return label
 }
 
 func (d *Device) AddRouting(routingTable map[uuid.UUID]Routing) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	for key, value := range routingTable {
-		d.RoutingTable[key] = value
+			d.RoutingTable[key] = value
 	}
+	d.mu.Unlock()
 }
 
 func (d *Device) RemoveRoutings(routes []uuid.UUID) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	for _, route := range routes {
 		delete(d.RoutingTable, route)
-	}	
+	}
+	d.mu.Unlock()
 }
 
 func (d *Device) RemoveFromTableRoutesWith(deviceLabel string) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	for routeUuid, route := range d.RoutingTable {
 		if deviceLabel == route.Source || deviceLabel == route.Target {
 			delete(d.RoutingTable, routeUuid)
 		}
 	}
+	d.mu.Unlock()
 }
 
 func (d *Device) GetRoutingTable() map[uuid.UUID]Routing {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	return d.RoutingTable
+	routingTable := make(map[uuid.UUID]Routing, len(d.RoutingTable))
+	for key, value := range d.RoutingTable {
+		routingTable[key] = value
+	}
+	d.mu.Unlock()
+	return routingTable
 }
 
 func (d *Device) GetUnreadMessages() []*Message {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	var unreadMessages []*Message
 	for _, message := range d.Messages.Received {
 		if !message.IsRead() {
 			unreadMessages = append(unreadMessages, message)
 		}
 	}
-
+	d.mu.Unlock()
 	return unreadMessages
 }
 
 func (d *Device) GetReadMessages() []*Message {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	var readMessages []*Message
 	for _, message := range d.Messages.Received {
 		if message.IsRead() {
 			readMessages = append(readMessages, message)
 		}
 	}
-
+	d.mu.Unlock()
 	return readMessages
 }
 
 func (d *Device) GetMessagesSent() []*Message {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	return d.Messages.Sent
+	messagesSent := make([]*Message, len(d.Messages.Sent))
+	copy(messagesSent, d.Messages.Sent)
+	d.mu.Unlock()
+	return messagesSent
 }
 
 func (d *Device) AddMessageToSent(message *Message) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	d.Messages.Sent = append(d.Messages.Sent, message)
+	d.mu.Unlock()
 }
 
 func (d *Device) AddMessageToReceived(message *Message) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
-
 	d.Messages.Received = append(d.Messages.Received, message)
+	d.mu.Unlock()
 }
 
 func (d *Device) PrintPrettyTable() {
@@ -181,7 +172,7 @@ func (d *Device) PrintPrettyTable() {
 	fmt.Printf("| %-36s | %-6s | %-6s | %-6s | \n", "Route UUID", "Source", "Target", "Weight")
 	fmt.Printf("%s\n", strings.Repeat("-", 67))
 	for routeUuid, route := range table {
-		fmt.Printf("| %-36v | %-6s | %-6s | %-6.2v |\n", routeUuid, route.Source, route.Target, route.Weight)
+		fmt.Printf("| %-36v | %-6s | %-6s | %-6.2f |\n", routeUuid, route.Source, route.Target, route.Weight)
 	}
 	fmt.Printf("%s\n", strings.Repeat("-", 67))
 }

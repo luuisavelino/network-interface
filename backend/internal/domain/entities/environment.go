@@ -27,42 +27,38 @@ func NewEnvironment() Environment {
 
 func (e *Environment) SetDeviceInChart(deviceLabel string, coverageArea CoverageArea) {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	e.Chart[deviceLabel] = &coverageArea
+	e.mu.Unlock()
 }
 
-func (e *Environment) GetDeviceInChart(deviceLabel string) (*CoverageArea) {
+func (e *Environment) GetDeviceInChart(deviceLabel string) *CoverageArea {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	chart := e.Chart[deviceLabel]
-
+	e.mu.Unlock()
 	return chart
 }
 
 func (e *Environment) GetChart() Chart {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	return e.Chart
+	chart := e.Chart
+	e.mu.Unlock()
+	return chart
 }
 
 func (e *Environment) GetDevices() Devices {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	return e.Devices
+	devices := e.Devices
+	e.mu.Unlock()
+	return devices
 }
 
 func (e *Environment) Walk(deviceLabel string) {
 	rand.Seed(time.Now().UnixNano())
 
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	device, exists := e.Chart[deviceLabel]
 	if !exists {
+		e.mu.Unlock()
 		return
 	}
 
@@ -70,16 +66,17 @@ func (e *Environment) Walk(deviceLabel string) {
 	device.Y += (rand.Intn(3) - 1) * 1
 
 	if device.X > maxPosX {
-		device.X = maxPosX
+			device.X = maxPosX
 	} else if device.X < 0 {
-		device.X = 0
+			device.X = 0
 	}
 
 	if device.Y > maxPosY {
-		device.Y = maxPosY
+			device.Y = maxPosY
 	} else if device.Y < 0 {
-		device.Y = 0
+			device.Y = 0
 	}
+	e.mu.Unlock()
 }
 
 func (e *Environment) GetDistanceTo(fromX, fromY, toX, toY int) float64 {
@@ -87,51 +84,45 @@ func (e *Environment) GetDistanceTo(fromX, fromY, toX, toY int) float64 {
 }
 
 func (e *Environment) CheckIfIsInTheCoverageArea(distance, r float64) bool {
-	if (distance <= r) {
-		return true
-	}
-
-	return false
+	return distance <= r
 }
 
 func (e *Environment) GetEnvironment() Environment {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	return *e
+	env := *e
+	e.mu.Unlock()
+	return env
 }
 
 func (e *Environment) GetDeviceByLabel(deviceLabel string) *Device {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	return e.Devices[deviceLabel]
+	device := e.Devices[deviceLabel]
+	e.mu.Unlock()
+	return device
 }
 
 func (e *Environment) AddDevice(device *Device) {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	e.Devices[device.GetDeviceLabel()] = device
+	e.mu.Unlock()
 }
 
 func (e *Environment) RemoveDevice(deviceLabel string) {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
 	delete(e.Devices, deviceLabel)
+	delete(e.Chart, deviceLabel)
+	e.mu.Unlock()
 }
 
 func (e *Environment) ScanDeviceNearby(deviceLabel string) []*Device {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-
-	devicesNearby := make([]*Device, 0)
 	sourcePosititon, exists := e.Chart[deviceLabel]
 	if !exists {
-		return devicesNearby
+		e.mu.Unlock()
+		return nil
 	}
 
+	devicesNearby := make([]*Device, 0)
 	for _, device := range e.Devices {
 		label := device.GetDeviceLabel()
 		if label == deviceLabel {
@@ -149,7 +140,7 @@ func (e *Environment) ScanDeviceNearby(deviceLabel string) []*Device {
 			devicesNearby = append(devicesNearby, device)
 		}
 	}
-
+	e.mu.Unlock()
 	return devicesNearby
 }
 
