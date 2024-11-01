@@ -26,6 +26,7 @@ type DevicesControllerInterface interface {
 	InsertDevice(c *gin.Context)
 	GetDevice(c *gin.Context)
 	UpdateRoutingTable(c *gin.Context)
+	DeleteDevice(c *gin.Context)
 	GetRoute(c *gin.Context)
 }
 

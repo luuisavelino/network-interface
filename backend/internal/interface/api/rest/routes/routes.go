@@ -14,6 +14,7 @@ func InitRoutes(r *gin.RouterGroup, controller controllers.ApiControllerInterfac
 			devices.POST("", controller.InsertDevice)
 			devices.PATCH("/:label", controller.UpdateRoutingTable)
 			devices.GET("/:label", controller.GetDevice)
+			devices.DELETE("/:label", controller.DeleteDevice)
 			devices.GET("/route/:source/:target", controller.GetRoute)
 	}
 

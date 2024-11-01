@@ -132,7 +132,10 @@ func (e *Environment) ScanDeviceNearby(deviceLabel string) []*Device {
 			continue
 		}
 
-		targetPosition := e.Chart[label]
+		targetPosition, exists := e.Chart[label]
+		if !exists {
+			continue
+		}
 
 		distance := e.GetDistanceTo(sourcePosisiton.X, sourcePosisiton.Y, targetPosition.X, targetPosition.Y)
 

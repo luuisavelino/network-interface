@@ -13,12 +13,34 @@ type Device struct {
 	Label 				string
 	mu 						sync.Mutex
 	Power					int
+	Status				bool
 	Messages			Messages
 	WalkingSpeed	int
 	MessageFreq		int
 	DevicesWithConn	[]string
 	ScanningDevices	bool
 	RoutingTable	map[uuid.UUID]Routing
+}
+
+func (d *Device) GetStatus() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	return d.Status
+}
+
+func (d *Device) SetStatus(status bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.Status = status
+}
+
+func (d *Device) ResetRoutingTable() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.RoutingTable = make(map[uuid.UUID]Routing)
 }
 
 func (d *Device) IsScanningDevices() bool {

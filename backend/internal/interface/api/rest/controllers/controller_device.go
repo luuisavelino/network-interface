@@ -142,3 +142,30 @@ func (sc *apiControllerInterface) GetRoute(c *gin.Context) {
 
 	c.JSON(http.StatusOK, model.ToRouteResponse(routes))
 }
+
+func (sc *apiControllerInterface) DeleteDevice(c *gin.Context) {
+	logger.Info("Init DeleteDevice controller",
+		zap.String("journey", "DeleteDevice"),
+	)
+
+	deviceLabel := c.Param("label")
+
+	err := sc.services.Device.DeleteDevice(c.Request.Context(), deviceLabel)
+	if err != nil {
+		logger.Error("Error to delete device",
+			err,
+			zap.String("journey", "DeleteDevice"),
+			zap.String("deviceLabel", deviceLabel),
+		)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error", "message": "Error to delete device",
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success", "message": "Device deleted",
+	})
+}
