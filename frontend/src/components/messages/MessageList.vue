@@ -1,14 +1,16 @@
 <template>
-  <div>
-    <ul>
-      <li v-for="message in messasgesOrdered" :key="message.id" class="border-b p-2">
-        <strong> {{ targetMessage }}</strong> {{ targetField(message) }} <br />
-        {{ message.content }} <br />
-        <div class="flex flex-row">
-          <small class="text-gray-500">{{ this.formatDate(message.date) }}</small>
-        </div>
-      </li>
-    </ul>
+  <div class="h-screen flex flex-col">
+    <div class="flex-grow h-4/5 overflow-y-auto">
+      <ul>
+        <li v-for="message in messasgesOrdered" :key="message.id" class="border-b p-2">
+          <strong>{{ targetMessage }}</strong> {{ targetField(message) }} <br />
+          {{ message.content }} <br />
+          <div class="flex flex-row">
+            <small class="text-gray-500">{{ this.formatDate(message.date) }}</small>
+          </div>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 

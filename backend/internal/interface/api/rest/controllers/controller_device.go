@@ -169,3 +169,41 @@ func (sc *apiControllerInterface) DeleteDevice(c *gin.Context) {
 		"status": "success", "message": "Device deleted",
 	})
 }
+
+func (sc *apiControllerInterface) SendMessage(c *gin.Context) {
+	logger.Info("Init SendMessage controller",
+		zap.String("journey", "SendMessage"),
+	)
+
+	var message model.MessageRequest
+	if err := c.BindJSON(&message); err != nil {
+		logger.Error("Error to bind message",
+			err,
+			zap.String("journey", "SendMessage"),
+		)
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error", "message": "Error to bind message",
+		})
+
+		return
+	}
+
+	err := sc.services.Device.SendUserMessage(c.Request.Context(), message.ToDomain())
+	if err != nil {
+		logger.Error("Error to send message",
+			err,
+			zap.String("journey", "SendMessage"),
+		)
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error", "message": "Error to send message",
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status": "success", "message": "Message sent",
+	})
+}

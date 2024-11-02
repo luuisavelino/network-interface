@@ -2,7 +2,7 @@ package envs
 
 import (
 	"os"
-
+	"fmt"
 	"gopkg.in/yaml.v3"
 )
 
@@ -39,8 +39,10 @@ func init() {
 		panic(err)
 	}
 
-	if cfg.log.Level != "debug" {
-		cfg.log.Level = "debug"
+	fmt.Println(cfg.log)
+
+	if cfg.log.Level != "error" {
+		cfg.log.Level = "error"
 	}
 
 	if cfg.api.Port == 0 {

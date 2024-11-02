@@ -1,9 +1,21 @@
 <template>
-  <div class="flex h-full w-full">
+  <div class="flex h-1/2 w-full">
     <SideBar @select="selectTab" @selected-device="selectedDevice" :devices="devicesLabel"/>
     <div class="flex-grow p-4">
       <div class="border rounded-lg p-4">
-        <h2 class="text-xl font-bold mb-4">{{ currentTab }}</h2>
+        <div class="flex items-center mb-8 justify-between">
+          <h2 class="text-xl font-bold">
+            {{ currentTab }}
+          </h2>
+          <select v-if="currentTab !== 'New'"
+            v-model="selectedFilter" 
+            class="mt-2 w-2/5 border border-gray-300 rounded-md p-1">
+            <option v-for="filter in filters" :key="filter" :value="filter">
+              {{ filter }}
+            </option>
+          </select>
+        </div>
+
         <div v-if="currentTab === 'Read'">
           <MessageList :type="'received'" :messages="filteredMessages('received', true)" />
         </div>
@@ -14,7 +26,7 @@
           <MessageList :type="'sent'" :messages="filteredMessages('sent', false)" />
         </div>
         <div v-if="currentTab === 'New'">
-          <MessageBox :recipients="devices" @sendMessage="sendMessage" />
+          <MessageBox :currentDevice="currentDevice" :recipients="this.devicesLabel" @sendMessage="sendMessage" />
         </div>
       </div>
     </div>
@@ -44,7 +56,17 @@ export default {
     return {
       currentTab: 'New',
       currentDevice: this.devicesLabel[0],
-      devices: {}
+      devices: {},
+      filters: [
+        'all',
+        'user-message',
+        'new-connection',
+        'new-connection-ack',
+        'confirm-connection',
+        'update-routing',
+        'update-routing-ack',
+      ],
+      selectedFilter: 'all',
     };
   },
   methods: {
@@ -64,7 +86,19 @@ export default {
         return this.devices[this.currentDevice]?.messages.sent;
       }
 
-      return this.devices[this.currentDevice]?.messages.received.filter(message => message.read === status);
+      return this.devices[this.currentDevice]?.messages.received.filter(message => {
+        if (this.selectedFilter === 'all') {
+          return message.read === status;
+        }
+
+        return message.topic === this.selectedFilter && message.read === status;
+      });
+    },
+    sendMessage(data){
+      servicesDevices.sendMessage(data)
+        .catch(error => {
+          console.error(error);
+        });
     }
   }
 }

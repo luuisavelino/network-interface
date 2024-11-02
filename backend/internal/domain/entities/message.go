@@ -6,8 +6,8 @@ import (
 )
 
 type Messages struct {
-	Sent []*Message
-	Received []*Message
+	Sent map[uuid.UUID]*Message
+	Received map[uuid.UUID]*Message
 }
 
 type Message struct {

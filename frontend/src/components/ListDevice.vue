@@ -31,18 +31,12 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232a2.828 2.828 0 014 4L7.5 21H3v-4.5L15.232 5.232z" />
               </svg>
             </button> -->
-            <!-- Ícone Inativar -->
-            <!-- <button class="text-yellow-500 hover:text-yellow-700">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 11-12.728 0" />
-              </svg>
-            </button> -->
             <!-- Ícone Delete -->
-            <!-- <button class="text-red-500 hover:text-red-700">
+            <button @click="deleteDevice(device.label)" class="text-red-500 hover:text-red-700">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </button> -->
+            </button>
           </td>
         </tr>
       </tbody>
@@ -74,6 +68,15 @@ export default {
     this.getDevices();
   },
   methods: {
+    deleteDevice(label) {
+      servicesDevices.deleteDevice(label)
+        .then(() => {
+          this.getDevices();
+        })
+        .catch(error => {
+          console.error(error);
+        });
+    },
     getDevices() {
       servicesDevices.getDevices()
         .then(response => {

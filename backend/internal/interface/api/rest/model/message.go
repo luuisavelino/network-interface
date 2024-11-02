@@ -28,6 +28,20 @@ func ToMessagesResponse(m entities.Messages) MessagesResponse {
 	}
 }
 
+type MessageRequest struct {
+	Sender  string      `json:"sender"`
+	Destination  string `json:"destination"`
+	Content interface{} `json:"content"`
+}
+
+func (m MessageRequest) ToDomain() entities.Message {
+	return entities.Message{
+		Sender: m.Sender,
+		Destination: m.Destination,
+		Content: m.Content,
+	}
+}
+
 type MessageResponse struct {
 	ID      string      `json:"label"`
 	Topic   string      `json:"topic"`

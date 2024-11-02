@@ -3,7 +3,7 @@
     <div class="mb-4">
       <label for="recipient" class="block text-sm font-medium">Destinatário:</label>
       <select id="recipient" v-model="selectedRecipient" class="mt-1 block w-full border border-gray-300 rounded-md p-1">
-        <option v-for="recipient in recipients" :key="recipient" :value="recipient">
+        <option v-for="recipient in filteredRecipient" :key="recipient" :value="recipient">
           {{ recipient }}
         </option>
       </select>
@@ -16,6 +16,10 @@
 <script>
 export default {
   props: {
+    currentDevice: {
+      type: String,
+      required: true
+    },
     recipients: {
       type: Array,
       required: true
@@ -27,10 +31,22 @@ export default {
       message: '',
     };
   },
+  computed: {
+    filteredRecipient() {
+      console.log(this.recipients);
+      if (!this.recipients || this.recipients.length === 0) return [];
+
+      return this.recipients.filter(recipient => recipient !== this.currentDevice);
+    }
+  },
   methods: {
     send() {
       if (this.message && this.selectedRecipient) {
-        this.$emit('sendMessage', { recipient: this.selectedRecipient, message: this.message });
+        this.$emit('sendMessage', {
+          sender: this.currentDevice,
+          destination: this.selectedRecipient, 
+          content: this.message
+        });
         this.message = '';
       } else {
         alert("Por favor, selecione um destinatário e digite uma mensagem.");

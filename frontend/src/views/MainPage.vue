@@ -1,9 +1,9 @@
 <template>
-  <div class="flex m-8">
+  <div class="flex h-screen m-8">
 
     <div class="w-1/2">
       <HeaderTemplate @navigate="loadComponent" />
-      <div class="container mx-auto mt-5">
+      <div class="container mx-auto mt-5 h-full">
         <component :is="currentComponent" @get-route="getRoute" @update-devices="getChart" :devicesLabel="devices" />
       </div>
     </div>

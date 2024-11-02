@@ -117,47 +117,46 @@ func (d *Device) GetRoutingTable() map[uuid.UUID]Routing {
 	return routingTable
 }
 
-func (d *Device) GetUnreadMessages() []*Message {
+func (d *Device) GetUnreadMessages() map[uuid.UUID]*Message {
 	d.mu.Lock()
-	var unreadMessages []*Message
+	unreadMessages := make(map[uuid.UUID]*Message)
 	for _, message := range d.Messages.Received {
 		if !message.IsRead() {
-			unreadMessages = append(unreadMessages, message)
+			unreadMessages[message.ID] = message
 		}
 	}
 	d.mu.Unlock()
 	return unreadMessages
 }
 
-func (d *Device) GetReadMessages() []*Message {
+func (d *Device) GetReadMessages() map[uuid.UUID]*Message {
 	d.mu.Lock()
-	var readMessages []*Message
+	readMessages := make(map[uuid.UUID]*Message)
 	for _, message := range d.Messages.Received {
 		if message.IsRead() {
-			readMessages = append(readMessages, message)
+			readMessages[message.ID] = message
 		}
 	}
 	d.mu.Unlock()
 	return readMessages
 }
 
-func (d *Device) GetMessagesSent() []*Message {
+func (d *Device) GetMessagesSent() map[uuid.UUID]*Message {
 	d.mu.Lock()
-	messagesSent := make([]*Message, len(d.Messages.Sent))
-	copy(messagesSent, d.Messages.Sent)
+	messagesSent := d.Messages.Sent
 	d.mu.Unlock()
 	return messagesSent
 }
 
 func (d *Device) AddMessageToSent(message *Message) {
 	d.mu.Lock()
-	d.Messages.Sent = append(d.Messages.Sent, message)
+	d.Messages.Sent[message.ID] = message
 	d.mu.Unlock()
 }
 
 func (d *Device) AddMessageToReceived(message *Message) {
 	d.mu.Lock()
-	d.Messages.Received = append(d.Messages.Received, message)
+	d.Messages.Received[message.ID] = message
 	d.mu.Unlock()
 }
 
@@ -175,4 +174,10 @@ func (d *Device) PrintPrettyTable() {
 		fmt.Printf("| %-36v | %-6s | %-6s | %-6.2f |\n", routeUuid, route.Source, route.Target, route.Weight)
 	}
 	fmt.Printf("%s\n", strings.Repeat("-", 67))
+}
+
+func (d *Device) DeleteMessage(messageId uuid.UUID) {
+	d.mu.Lock()
+	delete(d.Messages.Received, messageId)
+	d.mu.Unlock()
 }

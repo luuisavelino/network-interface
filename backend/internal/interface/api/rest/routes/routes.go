@@ -16,6 +16,7 @@ func InitRoutes(r *gin.RouterGroup, controller controllers.ApiControllerInterfac
 			devices.GET("/:label", controller.GetDevice)
 			devices.DELETE("/:label", controller.DeleteDevice)
 			devices.GET("/route/:source/:target", controller.GetRoute)
+			devices.POST("/message", controller.SendMessage)
 	}
 
 	chart := v1.Group("/chart")
