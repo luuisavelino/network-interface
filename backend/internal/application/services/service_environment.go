@@ -1,11 +1,12 @@
 package services
 
 import (
+	"context"
+	"errors"
+
 	"github.com/luuisavelino/network-interface/internal/domain/entities"
 	"github.com/luuisavelino/network-interface/pkg/logger"
 	"go.uber.org/zap"
-	"context"
-	"errors"
 )
 
 func NewEnvironmentService(environment entities.Environment) EnvironmentService {

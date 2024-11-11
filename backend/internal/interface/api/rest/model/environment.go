@@ -2,7 +2,7 @@ package model
 
 import "github.com/luuisavelino/network-interface/internal/domain/entities"
 
-type EnvironmentRequest struct {}
+type EnvironmentRequest struct{}
 
 func (r EnvironmentRequest) ToDomain() entities.Environment {
 	return entities.Environment{}
@@ -10,7 +10,7 @@ func (r EnvironmentRequest) ToDomain() entities.Environment {
 
 func ToEnvironmentResponse(d entities.Environment) EnvironmentResponse {
 	var deviceResponse []DeviceResponse
-	var chartResponse = ToChartResponse(d.GetChart())
+	chartResponse := ToChartResponse(d.GetChart())
 
 	for _, device := range d.Devices {
 		deviceResponse = append(deviceResponse, ToDeviceResponse(*device))
@@ -18,11 +18,11 @@ func ToEnvironmentResponse(d entities.Environment) EnvironmentResponse {
 
 	return EnvironmentResponse{
 		Devices: deviceResponse,
-		Chart: chartResponse,
+		Chart:   chartResponse,
 	}
 }
 
 type EnvironmentResponse struct {
 	Devices []DeviceResponse `json:"devices"`
-	Chart   ChartResponse `json:"chart"`
+	Chart   ChartResponse    `json:"chart"`
 }

@@ -1,7 +1,7 @@
 package services
 
 type ApiServices struct {
-	RoutingTable  RoutingTableService
-	Device        DeviceService
-	Environment   EnvironmentService
+	RoutingTable RoutingTableService
+	Device       DeviceService
+	Environment  EnvironmentService
 }

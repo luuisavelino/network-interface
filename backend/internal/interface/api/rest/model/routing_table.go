@@ -2,15 +2,14 @@ package model
 
 // import "github.com/luuisavelino/network-interface/internal/domain/entities"
 
-
 type RoutingTableResponse struct {
 	RoutingTable []RoutingResponse `json:"routing_table"`
 }
 
 type RoutingResponse struct {
-	Source  string    `json:"source"`
-	Target  string    `json:"target"`
-	Weight  float64 `json:"weight"`
+	Source string  `json:"source"`
+	Target string  `json:"target"`
+	Weight float64 `json:"weight"`
 }
 
 // func ToResponse(t entities.RoutingTable) RoutingTableResponse {

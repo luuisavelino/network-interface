@@ -1,25 +1,26 @@
 package entities
 
 import (
-	"github.com/google/uuid"
-	"sync"
 	"fmt"
 	"strings"
+	"sync"
+
+	"github.com/google/uuid"
 )
 
 type Devices map[string]*Device
 
 type Device struct {
-	Label              string
-	mu                 sync.Mutex
-	Power              int
-	Status             bool
-	Messages           Messages
-	WalkingSpeed       int
-	MessageFreq        int
-	DevicesWithConn    []string
-	ScanningDevices    bool
-	RoutingTable       map[uuid.UUID]Routing
+	Label           string
+	mu              sync.Mutex
+	Power           int
+	Status          bool
+	Messages        Messages
+	WalkingSpeed    int
+	MessageFreq     int
+	DevicesWithConn []string
+	ScanningDevices bool
+	RoutingTable    map[uuid.UUID]Routing
 }
 
 func (d *Device) GetStatus() bool {
@@ -84,7 +85,7 @@ func (d *Device) GetDeviceLabel() string {
 func (d *Device) AddRouting(routingTable map[uuid.UUID]Routing) {
 	d.mu.Lock()
 	for key, value := range routingTable {
-			d.RoutingTable[key] = value
+		d.RoutingTable[key] = value
 	}
 	d.mu.Unlock()
 }

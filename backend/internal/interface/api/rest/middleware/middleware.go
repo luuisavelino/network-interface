@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/luuisavelino/network-interface/pkg/envs"
-	"github.com/luuisavelino/network-interface/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
+	"github.com/luuisavelino/network-interface/pkg/envs"
+	"github.com/luuisavelino/network-interface/pkg/logger"
 	"go.uber.org/zap"
 )
 

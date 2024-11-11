@@ -1,34 +1,35 @@
 package entities
 
 import (
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Messages struct {
-	Sent map[uuid.UUID]*Message
+	Sent     map[uuid.UUID]*Message
 	Received map[uuid.UUID]*Message
 }
 
 type Message struct {
-	ID 			uuid.UUID
-	Topic   string
-	Sender  string
-	Destination  string
-	Content interface{}
-	read 		bool
-	Date time.Time
+	ID          uuid.UUID
+	Topic       string
+	Sender      string
+	Destination string
+	Content     interface{}
+	read        bool
+	Date        time.Time
 }
 
 func NewMessage(topic string, source string, target string, content interface{}) Message {
 	return Message{
-		ID: uuid.New(),
-		Topic: topic,
-		Sender: source,
+		ID:          uuid.New(),
+		Topic:       topic,
+		Sender:      source,
 		Destination: target,
-		Content: content,
-		read: false,
-		Date: time.Now(),
+		Content:     content,
+		read:        false,
+		Date:        time.Now(),
 	}
 }
 

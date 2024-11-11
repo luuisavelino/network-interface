@@ -1,9 +1,9 @@
 package entities
 
 import (
-	"sync"
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -13,7 +13,7 @@ const (
 )
 
 type Environment struct {
-	mu sync.Mutex
+	mu      sync.Mutex
 	Devices Devices
 	Chart   Chart
 }
@@ -21,7 +21,7 @@ type Environment struct {
 func NewEnvironment() Environment {
 	return Environment{
 		Devices: make(Devices),
-		Chart: make(Chart),
+		Chart:   make(Chart),
 	}
 }
 
@@ -66,15 +66,15 @@ func (e *Environment) Walk(deviceLabel string) {
 	device.Y += (rand.Intn(3) - 1) * 1
 
 	if device.X > maxPosX {
-			device.X = maxPosX
+		device.X = maxPosX
 	} else if device.X < 0 {
-			device.X = 0
+		device.X = 0
 	}
 
 	if device.Y > maxPosY {
-			device.Y = maxPosY
+		device.Y = maxPosY
 	} else if device.Y < 0 {
-			device.Y = 0
+		device.Y = 0
 	}
 	e.mu.Unlock()
 }

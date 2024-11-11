@@ -2,8 +2,9 @@ package controllers
 
 import (
 	"net/http"
-	"github.com/luuisavelino/network-interface/pkg/logger"
+
 	"github.com/gin-gonic/gin"
+	"github.com/luuisavelino/network-interface/pkg/logger"
 	"go.uber.org/zap"
 )
 

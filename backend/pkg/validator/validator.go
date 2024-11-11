@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 
-	rest_err "github.com/luuisavelino/network-interface/pkg/error"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	en_translation "github.com/go-playground/validator/v10/translations/en"
+	rest_err "github.com/luuisavelino/network-interface/pkg/error"
 )
 
 var (

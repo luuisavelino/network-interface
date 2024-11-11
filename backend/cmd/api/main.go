@@ -5,15 +5,15 @@ import (
 	"log"
 	"time"
 
-	"github.com/luuisavelino/network-interface/internal/application/services"
-	"github.com/luuisavelino/network-interface/internal/interface/api/rest/controllers"
-	"github.com/luuisavelino/network-interface/internal/interface/api/rest/middleware"
-	"github.com/luuisavelino/network-interface/internal/interface/api/rest/routes"
-	"github.com/luuisavelino/network-interface/internal/domain/entities"
-	"github.com/luuisavelino/network-interface/pkg/envs"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron/v2"
+	"github.com/luuisavelino/network-interface/internal/application/services"
+	"github.com/luuisavelino/network-interface/internal/domain/entities"
+	"github.com/luuisavelino/network-interface/internal/interface/api/rest/controllers"
+	"github.com/luuisavelino/network-interface/internal/interface/api/rest/middleware"
+	"github.com/luuisavelino/network-interface/internal/interface/api/rest/routes"
+	"github.com/luuisavelino/network-interface/pkg/envs"
 )
 
 func main() {
@@ -25,9 +25,9 @@ func main() {
 	}
 
 	services := services.ApiServices{
-		RoutingTable:  services.NewRoutingTableService(environment),
-		Device:        services.NewDeviceService(environment, s),
-		Environment:   services.NewEnvironmentService(environment),
+		RoutingTable: services.NewRoutingTableService(environment),
+		Device:       services.NewDeviceService(environment, s),
+		Environment:  services.NewEnvironmentService(environment),
 	}
 
 	apiController := controllers.NewApiController(services)
@@ -39,7 +39,7 @@ func main() {
 		AllowMethods:     []string{"GET", "POST", "DELETE", "PATCH"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		MaxAge: 12 * time.Hour,
+		MaxAge:           12 * time.Hour,
 	}))
 
 	router.Use(gin.Recovery())

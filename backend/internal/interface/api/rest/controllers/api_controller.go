@@ -1,9 +1,9 @@
 package controllers
 
 import (
-	"github.com/luuisavelino/network-interface/internal/application/services"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"github.com/luuisavelino/network-interface/internal/application/services"
 )
 
 type apiControllerInterface struct {

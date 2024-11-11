@@ -1,8 +1,9 @@
 package model
 
 import (
-	"github.com/luuisavelino/network-interface/internal/domain/entities"
 	"time"
+
+	"github.com/luuisavelino/network-interface/internal/domain/entities"
 )
 
 type MessagesResponse struct {
@@ -29,45 +30,45 @@ func ToMessagesResponse(m entities.Messages) MessagesResponse {
 }
 
 type MessageRequest struct {
-	Sender  string      `json:"sender"`
-	Destination  string `json:"destination"`
-	Content interface{} `json:"content"`
+	Sender      string      `json:"sender"`
+	Destination string      `json:"destination"`
+	Content     interface{} `json:"content"`
 }
 
 func (m MessageRequest) ToDomain() entities.Message {
 	return entities.Message{
-		Sender: m.Sender,
+		Sender:      m.Sender,
 		Destination: m.Destination,
-		Content: m.Content,
+		Content:     m.Content,
 	}
 }
 
 type MessageResponse struct {
-	ID      string      `json:"label"`
-	Topic   string      `json:"topic"`
-	Sender  string      `json:"sender"`
-	Destination  string `json:"destination"`
-	Content interface{} `json:"content"`
-	Read    bool        `json:"read"`
-	Date 	time.Time     `json:"date"`
+	ID          string      `json:"label"`
+	Topic       string      `json:"topic"`
+	Sender      string      `json:"sender"`
+	Destination string      `json:"destination"`
+	Content     interface{} `json:"content"`
+	Read        bool        `json:"read"`
+	Date        time.Time   `json:"date"`
 }
 
 func ToMessageResponse(m entities.Message) MessageResponse {
 	var content string
 	switch m.Topic {
-	case  "user-message" :
+	case "user-message":
 		content = m.Content.(string)
 	default:
 		content = m.Topic
 	}
 
 	return MessageResponse{
-		ID: m.ID.String(),
-		Topic: m.Topic,
-		Sender: m.Sender,
+		ID:          m.ID.String(),
+		Topic:       m.Topic,
+		Sender:      m.Sender,
 		Destination: m.Destination,
-		Content: content,
-		Read: m.IsRead(),
-		Date: m.Date,
+		Content:     content,
+		Read:        m.IsRead(),
+		Date:        m.Date,
 	}
 }

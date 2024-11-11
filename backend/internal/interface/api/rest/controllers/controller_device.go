@@ -2,10 +2,11 @@ package controllers
 
 import (
 	"net/http"
-	"github.com/luuisavelino/network-interface/pkg/logger"
+
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"github.com/luuisavelino/network-interface/internal/interface/api/rest/model"
+	"github.com/luuisavelino/network-interface/pkg/logger"
+	"go.uber.org/zap"
 )
 
 func (sc *apiControllerInterface) GetDevices(c *gin.Context) {

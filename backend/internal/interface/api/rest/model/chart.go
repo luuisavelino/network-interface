@@ -5,7 +5,7 @@ import (
 )
 
 func ToChartResponse(chart entities.Chart) ChartResponse {
-	var chartResponse = make(ChartResponse)
+	chartResponse := make(ChartResponse)
 
 	for key, value := range chart {
 		chartResponse[key] = CoverageArea{
@@ -21,8 +21,8 @@ func ToChartResponse(chart entities.Chart) ChartResponse {
 type ChartResponse map[string]CoverageArea
 
 type CoverageArea struct {
-	X int `json:"x" binding:"required"`
-	Y int `json:"y" binding:"required"`
+	X int     `json:"x" binding:"required"`
+	Y int     `json:"y" binding:"required"`
 	R float64 `json:"r"`
 }
 
