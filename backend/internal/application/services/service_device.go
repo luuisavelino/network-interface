@@ -1,40 +1,42 @@
 package services
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"runtime"
+	"time"
+
+	"github.com/RyanCarrier/dijkstra/v2"
+	"github.com/go-co-op/gocron/v2"
+	"github.com/google/uuid"
 	"github.com/luuisavelino/network-interface/internal/domain/entities"
 	"github.com/luuisavelino/network-interface/pkg/logger"
 	"go.uber.org/zap"
-	"context"
-	"github.com/google/uuid"
-	"github.com/go-co-op/gocron/v2"
-	"fmt"
-	"errors"
-	"time"
-	"runtime"
 )
 
 func NewDeviceService(environment entities.Environment, scheduler gocron.Scheduler) DeviceService {
 	return deviceService{
 		environment: environment,
-		scheduler: scheduler,
+		scheduler:   scheduler,
 		jobs: Jobs{
 			UpdateRoutingTable: make(map[string]context.CancelFunc),
-			Message: make(map[string]context.CancelFunc),
-			Walk: make(map[string]context.CancelFunc),
+			Message:            make(map[string]context.CancelFunc),
+			Walk:               make(map[string]context.CancelFunc),
 		},
 	}
 }
 
 type deviceService struct {
 	environment entities.Environment
-	scheduler gocron.Scheduler
-	jobs Jobs
+	scheduler   gocron.Scheduler
+	jobs        Jobs
 }
 
 type Jobs struct {
 	UpdateRoutingTable map[string]context.CancelFunc
-	Message map[string]context.CancelFunc
-	Walk map[string]context.CancelFunc
+	Message            map[string]context.CancelFunc
+	Walk               map[string]context.CancelFunc
 }
 
 type DeviceService interface {
@@ -62,7 +64,7 @@ func (rs deviceService) InsertDevice(ctx context.Context, device entities.Device
 
 	device.RoutingTable = make(map[uuid.UUID]entities.Routing, 0)
 	device.Messages = entities.Messages{
-		Sent: make(map[uuid.UUID]*entities.Message),
+		Sent:     make(map[uuid.UUID]*entities.Message),
 		Received: make(map[uuid.UUID]*entities.Message),
 	}
 
@@ -357,7 +359,7 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceLabel stri
 			device.GetDeviceLabel(),
 			nil,
 		)
-		
+
 		rs.SendMessage(currentDevice, device, message)
 	}
 
@@ -385,8 +387,6 @@ func (rs deviceService) PropagateRoutingTable(ctx context.Context, device *entit
 	currDevice := device.GetDeviceLabel()
 	device.RemoveFromTableRoutesWith(currDevice)
 
-	fmt.Println("PropagateRoutingTable", device.GetDevicesWithConn())
-
 	for _, deviceConn := range device.GetDevicesWithConn() {
 		connDevice := rs.environment.GetDeviceByLabel(deviceConn)
 		if connDevice == nil {
@@ -399,14 +399,14 @@ func (rs deviceService) PropagateRoutingTable(ctx context.Context, device *entit
 			rs.environment.GetDeviceInChart(deviceConn).X,
 			rs.environment.GetDeviceInChart(deviceConn).Y,
 		)
-	
+
 		routingTable := make(map[uuid.UUID]entities.Routing, 0)
 		routingTable[uuid.New()] = entities.Routing{
 			Source: currDevice,
 			Target: deviceConn,
 			Weight: weight,
 		}
-	
+
 		device.AddRouting(routingTable)
 
 		device.PrintPrettyTable()
@@ -430,31 +430,34 @@ func (rs deviceService) GetRoute(tx context.Context, sourceId string, targetId s
 	sourceDevice := rs.environment.GetDeviceByLabel(sourceId)
 
 	if sourceDevice == nil {
-		return nil, errors.New(fmt.Sprintf("device not found: %s", sourceId))
+		return nil, fmt.Errorf("device not found: %s", sourceId)
 	}
 
-	graph := &entities.Graph{}
+	graph := dijkstra.NewMappedGraph[string]()
+	for device := range rs.environment.GetChart() {
+		graph.AddEmptyVertex(device)
+	}
+
 	for _, routing := range sourceDevice.GetRoutingTable() {
-		graph.AddEdge(routing.Source, routing.Target, routing.Weight)
+		graph.AddArc(
+			routing.Source,
+			routing.Target,
+			uint64(routing.Weight*1000),
+		)
 	}
 
-	fmt.Println("BEFORE DIJKSTRA")
-	printAlloc()
-	bestPaths := graph.DijkstraKBest(sourceId, targetId, 3)
-	if len(bestPaths) == 0 {
-		return nil, errors.New("no path found")
+	best, err := graph.Shortest(sourceId, targetId)
+	if err != nil {
+		return nil, err
 	}
-	printAlloc()
-	fmt.Println("AFTER DIJKSTRA")
 
 	routes := make([]entities.Route, 0)
-
-	for _, route := range bestPaths[0].Path {
-		routes = append(routes, entities.Route{
-			Source: route.Source,
-			Target: route.Target,
-		})
+	for i := 0; i < len(best.Path)-1; i++ {
+		route := entities.Route{Source: best.Path[i], Target: best.Path[i+1]}
+		routes = append(routes, route)
 	}
+
+	printAlloc()
 
 	return routes, nil
 }
@@ -524,23 +527,23 @@ func (rs *deviceService) ScheduleReadMessages(deviceLabel string) {
 }
 
 func (rs *deviceService) CancelJob(jobType, deviceLabel string) {
-    switch jobType {
-    case "updateRoutingTable":
-			if cancel, exists := rs.jobs.UpdateRoutingTable[deviceLabel]; exists {
-        cancel()
-        delete(rs.jobs.UpdateRoutingTable, deviceLabel)
-    	}
-    case "message":
-			if cancel, exists := rs.jobs.Message[deviceLabel]; exists {
-        cancel()
-        delete(rs.jobs.Message, deviceLabel)
-    	}
-    case "walk":
-			if cancel, exists := rs.jobs.Walk[deviceLabel]; exists {
-        cancel()
-        delete(rs.jobs.Walk, deviceLabel)
-    	}
-    }
+	switch jobType {
+	case "updateRoutingTable":
+		if cancel, exists := rs.jobs.UpdateRoutingTable[deviceLabel]; exists {
+			cancel()
+			delete(rs.jobs.UpdateRoutingTable, deviceLabel)
+		}
+	case "message":
+		if cancel, exists := rs.jobs.Message[deviceLabel]; exists {
+			cancel()
+			delete(rs.jobs.Message, deviceLabel)
+		}
+	case "walk":
+		if cancel, exists := rs.jobs.Walk[deviceLabel]; exists {
+			cancel()
+			delete(rs.jobs.Walk, deviceLabel)
+		}
+	}
 }
 
 func (rs deviceService) DeleteDevice(ctx context.Context, deviceLabel string) error {

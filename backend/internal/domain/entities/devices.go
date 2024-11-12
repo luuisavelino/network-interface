@@ -169,6 +169,8 @@ func (d *Device) PrintPrettyTable() {
 	}
 
 	fmt.Printf("%s\n", strings.Repeat("-", 67))
+	fmt.Printf("| %-36s | %-24s | \n", "Device", d.GetDeviceLabel())
+	fmt.Printf("%s\n", strings.Repeat("-", 67))
 	fmt.Printf("| %-36s | %-6s | %-6s | %-6s | \n", "Route UUID", "Source", "Target", "Weight")
 	fmt.Printf("%s\n", strings.Repeat("-", 67))
 	for routeUuid, route := range table {
