@@ -27,12 +27,5 @@ func (rs routingTableService) GetTable(ctx context.Context) ([]entities.Routing,
 		zap.String("journey", "GetTable"),
 	)
 
-	device := rs.environment.Devices["1"]
-	routes := make([]entities.Routing, 0)
-
-	for _, route := range device.RoutingTable {
-		routes = append(routes, route)
-	}
-
-	return routes, nil
+	return nil, nil
 }

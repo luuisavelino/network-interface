@@ -1,7 +1,4 @@
 package entities
 
-type Routing struct {
-	Source string
-	Target string
-	Weight float64
-}
+// type -> source -> target -> weight
+type Routing map[string]map[string]map[string]float64

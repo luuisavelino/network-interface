@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -127,7 +128,11 @@ func (sc *apiControllerInterface) GetRoute(c *gin.Context) {
 	source := c.Param("source")
 	target := c.Param("target")
 
-	routes, err := sc.services.Device.GetRoute(c.Request.Context(), source, target)
+	routingType := c.Query("type")
+
+	fmt.Println(routingType)
+
+	routes, err := sc.services.Device.GetRoute(c.Request.Context(), source, target, routingType)
 	if err != nil {
 		logger.Error("Error to get route",
 			err,
@@ -171,16 +176,16 @@ func (sc *apiControllerInterface) DeleteDevice(c *gin.Context) {
 	})
 }
 
-func (sc *apiControllerInterface) SendMessage(c *gin.Context) {
-	logger.Info("Init SendMessage controller",
-		zap.String("journey", "SendMessage"),
+func (sc *apiControllerInterface) SendRequest(c *gin.Context) {
+	logger.Info("Init SendRequest controller",
+		zap.String("journey", "SendRequest"),
 	)
 
-	var message model.MessageRequest
+	var message model.RequestRequest
 	if err := c.BindJSON(&message); err != nil {
 		logger.Error("Error to bind message",
 			err,
-			zap.String("journey", "SendMessage"),
+			zap.String("journey", "SendRequest"),
 		)
 
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -194,7 +199,7 @@ func (sc *apiControllerInterface) SendMessage(c *gin.Context) {
 	if err != nil {
 		logger.Error("Error to send message",
 			err,
-			zap.String("journey", "SendMessage"),
+			zap.String("journey", "SendRequest"),
 		)
 
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -205,6 +210,6 @@ func (sc *apiControllerInterface) SendMessage(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"status": "success", "message": "Message sent",
+		"status": "success", "message": "Request sent",
 	})
 }

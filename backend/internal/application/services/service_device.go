@@ -21,7 +21,7 @@ func NewDeviceService(environment *entities.Environment, scheduler gocron.Schedu
 		scheduler:   scheduler,
 		jobs: Jobs{
 			UpdateRoutingTable: make(map[string]context.CancelFunc),
-			Message:            make(map[string]context.CancelFunc),
+			Request:            make(map[string]context.CancelFunc),
 			Walk:               make(map[string]context.CancelFunc),
 		},
 	}
@@ -35,7 +35,7 @@ type deviceService struct {
 
 type Jobs struct {
 	UpdateRoutingTable map[string]context.CancelFunc
-	Message            map[string]context.CancelFunc
+	Request            map[string]context.CancelFunc
 	Walk               map[string]context.CancelFunc
 }
 
@@ -44,9 +44,9 @@ type DeviceService interface {
 	InsertDevice(ctx context.Context, device entities.Device) (entities.Device, error)
 	UpdateRoutingTable(ctx context.Context, deviceLabel string) error
 	GetDevice(ctx context.Context, deviceLabel string) (entities.Device, error)
-	GetRoute(tx context.Context, sourceId string, targetId string) ([]entities.Route, error)
+	GetRoute(tx context.Context, sourceId string, targetId string, routingType string) ([]entities.Route, error)
 	DeleteDevice(ctx context.Context, deviceLabel string) error
-	SendUserMessage(ctx context.Context, message entities.Message) error
+	SendUserMessage(ctx context.Context, request entities.Request) error
 }
 
 func (rs deviceService) GetDevices(ctx context.Context) (entities.Devices, error) {
@@ -62,10 +62,10 @@ func (rs deviceService) InsertDevice(ctx context.Context, device entities.Device
 		zap.String("journey", "InsertDevice"),
 	)
 
-	device.RoutingTable = make(map[uuid.UUID]entities.Routing, 0)
-	device.Messages = entities.Messages{
-		Sent:     make(map[uuid.UUID]*entities.Message),
-		Received: make(map[uuid.UUID]*entities.Message),
+	device.RoutingTable = make(entities.Routing, 0)
+	device.Requests = entities.Requests{
+		Sent:     make(map[uuid.UUID]*entities.Request),
+		Received: make(map[uuid.UUID]*entities.Request),
 	}
 
 	device.SetStatus(true)
@@ -74,9 +74,9 @@ func (rs deviceService) InsertDevice(ctx context.Context, device entities.Device
 
 	label := device.GetDeviceLabel()
 
-	rs.ScheduleReadMessages(label)
+	rs.ScheduleReadRequests(label)
 	rs.ScheduleUpdateRoutingTable(label)
-	rs.ScheduleWalk(label)
+	// rs.ScheduleWalk(label)
 
 	rs.scheduler.Start()
 
@@ -96,29 +96,64 @@ func (rs deviceService) GetDevice(ctx context.Context, deviceLabel string) (enti
 	return *device, nil
 }
 
-func (rs deviceService) SendUserMessage(ctx context.Context, message entities.Message) error {
-	logger.Info("Init SentMessage service",
-		zap.String("journey", "SentMessage"),
-		zap.String("current", message.Sender),
-		zap.String("target", message.Destination),
-		zap.String("message", message.Content.(string)),
+func (rs deviceService) SendUserMessage(ctx context.Context, request entities.Request) error {
+	logger.Info("Init SendUserMessage service",
+		zap.String("journey", "SendUserMessage"),
+		zap.String("current", request.Header.Sender),
+		zap.String("target", request.Header.Destination),
+		zap.String("request", request.Body.(string)),
 	)
 
-	currentDevice := rs.environment.GetDeviceByLabel(message.Sender)
+	currentDevice := rs.environment.GetDeviceByLabel(request.Header.Sender)
 	if currentDevice == nil {
-		return fmt.Errorf("device not found: %s", message.Sender)
+		return fmt.Errorf("device not found: %s", request.Header.Sender)
 	}
 
-	targetDevice := rs.environment.GetDeviceByLabel(message.Destination)
+	targetDevice := rs.environment.GetDeviceByLabel(request.Header.Destination)
 	if targetDevice == nil {
-		return fmt.Errorf("device not found: %s", message.Destination)
+		return fmt.Errorf("device not found: %s", request.Header.Destination)
 	}
 
-	newMessage := entities.NewMessage(
+	var routingType string
+	switch request.Header.ContentType {
+	case "text":
+		routingType = "distance"
+	case "audio":
+		routingType = "latency"
+	case "file":
+		routingType = "error-rate"
+	default:
+		routingType = "distance"
+	}
+
+	routes, err := rs.GetRoute(ctx, request.Header.Sender, request.Header.Destination, routingType)
+	if err != nil {
+		return err
+	}
+
+	if len(routes) == 0 {
+		return fmt.Errorf("no route to send message")
+	}
+
+	rs.PropagateRequest(ctx, routes, request)
+
+	return nil
+}
+
+func (rs deviceService) PropagateRequest(ctx context.Context, routes []entities.Route, request entities.Request) {
+	target := routes[0].Target
+
+	currentDevice := rs.environment.GetDeviceByLabel(request.Header.Sender)
+	targetDevice := rs.environment.GetDeviceByLabel(target)
+
+	routes = routes[1:]
+
+	newRequest := entities.NewRequest(
 		"user-message",
-		message.Sender,
-		message.Destination,
-		message.Content,
+		request.Header.Sender,
+		target,
+		routes,
+		request.Body,
 	)
 
 	go func() {
@@ -126,15 +161,14 @@ func (rs deviceService) SendUserMessage(ctx context.Context, message entities.Me
 		const maxTimeout = 5 * time.Second
 
 		for i := 0; i < maxRetries; i++ {
-			rs.SendMessage(currentDevice, targetDevice, newMessage)
+			rs.SendRequest(currentDevice, targetDevice, newRequest)
 
 			select {
 			case <-ctx.Done():
 				return
 			case <-time.After(maxTimeout):
-				for _, msg := range targetDevice.GetUnreadMessages() {
-					if msg.Topic == "user-message-ack" && msg.Sender == message.Destination {
-						// currentDevice.DeleteMessage(msg.ID)
+				for _, msg := range targetDevice.GetUnreadRequests() {
+					if msg.Header.Topic == "user-message-ack" && msg.Header.Sender == request.Header.Destination {
 						msg.Read()
 						return
 					}
@@ -142,19 +176,15 @@ func (rs deviceService) SendUserMessage(ctx context.Context, message entities.Me
 			}
 		}
 		logger.Info("Failed to receive user-message-ack after retries",
-			zap.String("current", message.Sender),
-			zap.String("target", message.Destination),
+			zap.String("current", request.Header.Sender),
+			zap.String("target", request.Header.Destination),
 		)
 	}()
-
-	return nil
 }
 
-func (rs deviceService) ReadMessages(ctx context.Context, deviceLabel string) error {
-	printAlloc()
-
-	logger.Info("Init ReadMessages service",
-		zap.String("journey", "ReadMessages"),
+func (rs deviceService) ReadRequests(ctx context.Context, deviceLabel string) error {
+	logger.Info("Init ReadRequests service",
+		zap.String("journey", "ReadRequests"),
 		zap.String("deviceLabel", deviceLabel),
 	)
 
@@ -164,14 +194,14 @@ func (rs deviceService) ReadMessages(ctx context.Context, deviceLabel string) er
 		return fmt.Errorf("device not found: %s", deviceLabel)
 	}
 
-	rs.ProcessAutomaticMessages(ctx, device)
+	rs.ProcessAutomaticRequests(ctx, device)
 
 	return nil
 }
 
-func (rs deviceService) ProcessAutomaticMessages(ctx context.Context, device *entities.Device) error {
-	logger.Info("Init ProcessAutomaticMessages service",
-		zap.String("journey", "ProcessAutomaticMessages"),
+func (rs deviceService) ProcessAutomaticRequests(ctx context.Context, device *entities.Device) error {
+	logger.Info("Init ProcessAutomaticRequests service",
+		zap.String("journey", "ProcessAutomaticRequests"),
 		zap.String("deviceLabel", device.GetDeviceLabel()),
 	)
 
@@ -181,22 +211,27 @@ func (rs deviceService) ProcessAutomaticMessages(ctx context.Context, device *en
 
 	deviceLabel := device.GetDeviceLabel()
 
-	for _, message := range device.GetUnreadMessages() {
-		switch message.Topic {
+	for id, request := range device.GetUnreadRequests() {
+		switch request.Header.Topic {
 		case "new-connection":
-			rs.NewConnection(ctx, deviceLabel, message.Sender)
-			message.Read()
-			// device.DeleteMessage(id)
+			rs.NewConnection(ctx, deviceLabel, request.Header.Sender)
+			request.Read()
+			device.DeleteRequest(id)
+
 		case "new-connection-ack":
-			rs.NewConnectionAck(ctx, deviceLabel, message.Sender)
-			message.Read()
-			// device.DeleteMessage(id)
+			rs.NewConnectionAck(ctx, deviceLabel, request.Header.Sender)
+			request.Read()
+			device.DeleteRequest(id)
 		case "confirm-connection":
-			rs.ConfirmConnection(ctx, deviceLabel, message.Sender)
-			message.Read()
-			// device.DeleteMessage(id)
+			rs.ConfirmConnection(ctx, deviceLabel, request.Header.Sender)
+			request.Read()
+			device.DeleteRequest(id)
 		case "update-routing":
-			rs.UpdateRouting(ctx, deviceLabel, message.Sender, message.Content.(map[uuid.UUID]entities.Routing))
+			rs.UpdateRouting(ctx, deviceLabel, request.Header.Sender, request.Body.(entities.Routing))
+			device.DeleteRequest(id)
+		case "user-message":
+			rs.UserMessage(ctx, deviceLabel, request.Header.Sender, *request)
+			request.Read()
 		default:
 			continue
 		}
@@ -225,14 +260,15 @@ func (rs deviceService) NewConnection(ctx context.Context, current, sender strin
 
 	senderDevice := rs.environment.GetDeviceByLabel(sender)
 
-	message := entities.NewMessage(
+	request := entities.NewRequest(
 		"new-connection-ack",
 		current,
 		sender,
 		nil,
+		nil,
 	)
 
-	rs.SendMessage(currentDevice, senderDevice, message)
+	rs.SendRequest(currentDevice, senderDevice, request)
 
 	return nil
 }
@@ -253,16 +289,21 @@ func (rs deviceService) NewConnectionAck(ctx context.Context, current, sender st
 		return fmt.Errorf("device not found: %s", sender)
 	}
 
-	message := entities.NewMessage(
+	request := entities.NewRequest(
 		"confirm-connection",
 		current,
 		sender,
 		nil,
+		nil,
 	)
 
-	rs.SendMessage(currentDevice, senderDevice, message)
+	rs.SendRequest(currentDevice, senderDevice, request)
 
-	currentDevice.SetDeviceWithConn(sender)
+	currentDevice.SetDeviceWithConn(
+		sender,
+		1,
+		1,
+	)
 
 	return nil
 }
@@ -282,7 +323,7 @@ func (rs deviceService) ConfirmConnection(ctx context.Context, current, sender s
 	return nil
 }
 
-func (rs deviceService) UpdateRouting(ctx context.Context, current, sender string, routingTable map[uuid.UUID]entities.Routing) error {
+func (rs deviceService) UpdateRouting(ctx context.Context, current, sender string, routingTable entities.Routing) error {
 	logger.Info("Init UpdateRouting service",
 		zap.String("journey", "UpdateRouting"),
 		zap.String("current", current),
@@ -296,14 +337,18 @@ func (rs deviceService) UpdateRouting(ctx context.Context, current, sender strin
 	currentDevice.RemoveFromTableRoutesWith(sender)
 	currentDevice.AddRouting(routingTable)
 
+	currentDevice.PrintPrettyTable()
+
 	return nil
 }
 
-func (rs deviceService) UserMessage(ctx context.Context, current, sender string) error {
+func (rs deviceService) UserMessage(ctx context.Context, current, sender string, request entities.Request) error {
 	logger.Info("Init UserMessage service",
 		zap.String("journey", "UserMessage"),
 		zap.String("current", current),
 	)
+
+	fmt.Println("UserMessage service:", current)
 
 	currentDevice := rs.environment.GetDeviceByLabel(current)
 	if currentDevice == nil {
@@ -315,14 +360,21 @@ func (rs deviceService) UserMessage(ctx context.Context, current, sender string)
 		return fmt.Errorf("device not found: %s", sender)
 	}
 
-	newMessage := entities.NewMessage(
+	userMessageAck := entities.NewRequest(
 		"user-message-ack",
 		current,
 		sender,
 		nil,
+		nil,
 	)
 
-	rs.SendMessage(currentDevice, senderDevice, newMessage)
+	rs.SendRequest(currentDevice, senderDevice, userMessageAck)
+
+	if len(request.Header.Path) == 0 {
+		return nil
+	}
+
+	rs.PropagateRequest(ctx, request.Header.Path, request)
 
 	return nil
 }
@@ -353,14 +405,15 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceLabel stri
 	}
 
 	for _, device := range devicesNearby {
-		message := entities.NewMessage(
+		request := entities.NewRequest(
 			"new-connection",
 			deviceLabel,
 			device.GetDeviceLabel(),
 			nil,
+			nil,
 		)
 
-		rs.SendMessage(currentDevice, device, message)
+		rs.SendRequest(currentDevice, device, request)
 	}
 
 	time.Sleep(15 * time.Second)
@@ -372,46 +425,59 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceLabel stri
 	return nil
 }
 
+func (rs deviceService) BuildRoutingTableRow(device *entities.Device, deviceConn string) entities.Routing {
+	currDevice := device.GetDeviceLabel()
+
+	weight := rs.environment.GetDistanceTo(
+		rs.environment.GetDeviceInChart(currDevice).X,
+		rs.environment.GetDeviceInChart(currDevice).Y,
+		rs.environment.GetDeviceInChart(deviceConn).X,
+		rs.environment.GetDeviceInChart(deviceConn).Y,
+	)
+
+	routingTable := make(entities.Routing, 0)
+	
+	routingTable["distance"] = make(map[string]map[string]float64)
+	routingTable["distance"][currDevice] = make(map[string]float64)
+	routingTable["distance"][currDevice][deviceConn] = weight
+	
+	routingTable["error-rate"] = make(map[string]map[string]float64)
+	routingTable["error-rate"][currDevice] = make(map[string]float64)
+	routingTable["error-rate"][currDevice][deviceConn] = device.DevicesWithConn[deviceConn].GetErrorRate()
+	
+	routingTable["latency"] = make(map[string]map[string]float64)
+	routingTable["latency"][currDevice] = make(map[string]float64)
+	routingTable["latency"][currDevice][deviceConn] = device.DevicesWithConn[deviceConn].GetLatency()
+
+	return routingTable
+}
+
 func (rs deviceService) PropagateRoutingTable(ctx context.Context, device *entities.Device) {
 	currDevice := device.GetDeviceLabel()
 	device.RemoveFromTableRoutesWith(currDevice)
 
-	for _, deviceConn := range device.GetDevicesWithConn() {
+	for deviceConn := range device.GetDevicesWithConn() {
 		connDevice := rs.environment.GetDeviceByLabel(deviceConn)
 		if connDevice == nil {
 			continue
 		}
 
-		weight := rs.environment.GetDistanceTo(
-			rs.environment.GetDeviceInChart(currDevice).X,
-			rs.environment.GetDeviceInChart(currDevice).Y,
-			rs.environment.GetDeviceInChart(deviceConn).X,
-			rs.environment.GetDeviceInChart(deviceConn).Y,
-		)
-
-		routingTable := make(map[uuid.UUID]entities.Routing, 0)
-		routingTable[uuid.New()] = entities.Routing{
-			Source: currDevice,
-			Target: deviceConn,
-			Weight: weight,
-		}
-
+		routingTable := rs.BuildRoutingTableRow(device, deviceConn)
 		device.AddRouting(routingTable)
 
-		device.PrintPrettyTable()
-
-		message := entities.NewMessage(
+		request := entities.NewRequest(
 			"update-routing",
 			currDevice,
 			deviceConn,
+			nil,
 			device.GetRoutingTable(),
 		)
 
-		rs.SendMessage(device, connDevice, message)
+		rs.SendRequest(device, connDevice, request)
 	}
 }
 
-func (rs deviceService) GetRoute(tx context.Context, sourceId string, targetId string) ([]entities.Route, error) {
+func (rs deviceService) GetRoute(tx context.Context, sourceId, targetId, routingType string) ([]entities.Route, error) {
 	logger.Info("Init GetRoute service",
 		zap.String("journey", "GetRoute"),
 	)
@@ -427,12 +493,14 @@ func (rs deviceService) GetRoute(tx context.Context, sourceId string, targetId s
 		graph.AddEmptyVertex(device)
 	}
 
-	for _, routing := range sourceDevice.GetRoutingTable() {
-		graph.AddArc(
-			routing.Source,
-			routing.Target,
-			uint64(routing.Weight*1000),
-		)
+	for sourceLabel, target := range sourceDevice.GetRoutingTable()[routingType] {
+		for targetLabel, weight := range target {
+			graph.AddArc(
+				sourceLabel,
+				targetLabel,
+				uint64(weight*1000),
+			)
+		}
 	}
 
 	best, err := graph.Shortest(sourceId, targetId)
@@ -451,18 +519,19 @@ func (rs deviceService) GetRoute(tx context.Context, sourceId string, targetId s
 	return routes, nil
 }
 
-func (rs deviceService) SendMessage(currentDevice *entities.Device, targetDevice *entities.Device, message entities.Message) {
-	logger.Info("Init SendMessage service",
-		zap.String("journey", "SendMessage"),
+func (rs deviceService) SendRequest(currentDevice *entities.Device, targetDevice *entities.Device, request entities.Request) {
+	logger.Info("Init SendRequest service",
+		zap.String("journey", "SendRequest"),
 		zap.String("source", currentDevice.GetDeviceLabel()),
 		zap.String("target", targetDevice.GetDeviceLabel()),
-		zap.String("message", message.Topic),
+		zap.String("request", request.Header.Topic),
 	)
 
-	targetDevice.AddMessageToReceived(&message)
-	if message.Topic == "user-message" {
-		currentDevice.AddMessageToSent(&message)
+	targetDevice.AddRequestToReceived(&request)
+	if request.Header.Topic == "user-message" {
+		currentDevice.AddRequestToSent(&request)
 	}
+	// currentDevice.AddRequestToSent(&request)
 }
 
 func (rs *deviceService) scheduleTask(deviceLabel string, interval time.Duration, task func(), jobType string) {
@@ -472,15 +541,17 @@ func (rs *deviceService) scheduleTask(deviceLabel string, interval time.Duration
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	switch jobType {
 	case "updateRoutingTable":
 		rs.jobs.UpdateRoutingTable[deviceLabel] = cancel
-	case "message":
-		rs.jobs.Message[deviceLabel] = cancel
+	case "request":
+		rs.jobs.Request[deviceLabel] = cancel
 	case "walk":
 		rs.jobs.Walk[deviceLabel] = cancel
+	default:
+		cancel()
+		return
 	}
 
 	go func() {
@@ -510,10 +581,10 @@ func (rs *deviceService) ScheduleUpdateRoutingTable(deviceLabel string) {
 	}, "updateRoutingTable")
 }
 
-func (rs *deviceService) ScheduleReadMessages(deviceLabel string) {
+func (rs *deviceService) ScheduleReadRequests(deviceLabel string) {
 	rs.scheduleTask(deviceLabel, 5*time.Second, func() {
-		rs.ReadMessages(context.Background(), deviceLabel)
-	}, "message")
+		rs.ReadRequests(context.Background(), deviceLabel)
+	}, "request")
 }
 
 func (rs *deviceService) CancelJob(jobType, deviceLabel string) {
@@ -523,10 +594,10 @@ func (rs *deviceService) CancelJob(jobType, deviceLabel string) {
 			cancel()
 			delete(rs.jobs.UpdateRoutingTable, deviceLabel)
 		}
-	case "message":
-		if cancel, exists := rs.jobs.Message[deviceLabel]; exists {
+	case "request":
+		if cancel, exists := rs.jobs.Request[deviceLabel]; exists {
 			cancel()
-			delete(rs.jobs.Message, deviceLabel)
+			delete(rs.jobs.Request, deviceLabel)
 		}
 	case "walk":
 		if cancel, exists := rs.jobs.Walk[deviceLabel]; exists {
@@ -547,7 +618,7 @@ func (rs deviceService) DeleteDevice(ctx context.Context, deviceLabel string) er
 		return fmt.Errorf("device not found: %s", deviceLabel)
 	}
 
-	rs.CancelJob("message", deviceLabel)
+	rs.CancelJob("request", deviceLabel)
 	rs.CancelJob("walk", deviceLabel)
 	rs.CancelJob("updateRoutingTable", deviceLabel)
 

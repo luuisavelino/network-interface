@@ -28,7 +28,7 @@ type DevicesControllerInterface interface {
 	UpdateRoutingTable(c *gin.Context)
 	DeleteDevice(c *gin.Context)
 	GetRoute(c *gin.Context)
-	SendMessage(c *gin.Context)
+	SendRequest(c *gin.Context)
 }
 
 type EnvironmentControllerInterface interface {

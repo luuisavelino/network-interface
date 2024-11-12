@@ -17,11 +17,11 @@ func init() {
 		Level:       zap.NewAtomicLevelAt(getLevelLogs()),
 		Encoding:    "json",
 		EncoderConfig: zapcore.EncoderConfig{
-			LevelKey:     "level",
+			// LevelKey:     "level",
 			TimeKey:      "time",
 			MessageKey:   "message",
 			EncodeTime:   zapcore.ISO8601TimeEncoder,
-			EncodeLevel:  zapcore.LowercaseLevelEncoder,
+			// EncodeLevel:  zapcore.LowercaseLevelEncoder,
 			EncodeCaller: zapcore.ShortCallerEncoder,
 		},
 	}

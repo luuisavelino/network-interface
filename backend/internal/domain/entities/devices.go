@@ -12,15 +12,14 @@ type Devices map[string]*Device
 
 type Device struct {
 	Label           string
-	mu              sync.Mutex
 	Power           int
 	Status          bool
-	Messages        Messages
-	WalkingSpeed    int
-	MessageFreq     int
-	DevicesWithConn []string
+	Requests        Requests
+	DevicesWithConn map[string]Connection
 	ScanningDevices bool
-	RoutingTable    map[uuid.UUID]Routing
+	RoutingTable    Routing
+
+	mu sync.Mutex
 }
 
 func (d *Device) GetStatus() bool {
@@ -38,10 +37,11 @@ func (d *Device) SetStatus(status bool) {
 
 func (d *Device) ResetRoutingTable() {
 	d.mu.Lock()
-	d.RoutingTable = make(map[uuid.UUID]Routing)
+	d.RoutingTable = make(Routing)
 	d.mu.Unlock()
 }
 
+// TODO: use this
 func (d *Device) IsScanningDevices() bool {
 	d.mu.Lock()
 	scanning := d.ScanningDevices
@@ -55,23 +55,24 @@ func (d *Device) SetScanningDevices(scanning bool) {
 	d.mu.Unlock()
 }
 
-func (d *Device) GetDevicesWithConn() []string {
+func (d *Device) GetDevicesWithConn() map[string]Connection {
 	d.mu.Lock()
-	devicesWithConn := make([]string, len(d.DevicesWithConn))
-	copy(devicesWithConn, d.DevicesWithConn)
-	d.mu.Unlock()
-	return devicesWithConn
+	defer d.mu.Unlock()
+	return d.DevicesWithConn
 }
 
-func (d *Device) SetDeviceWithConn(device string) {
+func (d *Device) SetDeviceWithConn(device string, errorRate, latency float64) {
 	d.mu.Lock()
-	d.DevicesWithConn = append(d.DevicesWithConn, device)
+	d.DevicesWithConn[device] = Connection{
+		ErrorRate: errorRate,
+		Latency:   latency,
+	}
 	d.mu.Unlock()
 }
 
 func (d *Device) ResetDeviceConn() {
 	d.mu.Lock()
-	d.DevicesWithConn = []string{}
+	d.DevicesWithConn = make(map[string]Connection)
 	d.mu.Unlock()
 }
 
@@ -82,82 +83,105 @@ func (d *Device) GetDeviceLabel() string {
 	return label
 }
 
-func (d *Device) AddRouting(routingTable map[uuid.UUID]Routing) {
+func (d *Device) AddRouting(routingTable Routing) {
 	d.mu.Lock()
-	for key, value := range routingTable {
-		d.RoutingTable[key] = value
+	for routeType, route := range routingTable {
+		if _, ok := d.RoutingTable[routeType]; !ok {
+			d.RoutingTable[routeType] = make(map[string]map[string]float64)
+			d.RoutingTable[routeType] = route
+			continue
+		}
+
+		for sourceLabel, target := range route {
+			if _, ok := d.RoutingTable[routeType][sourceLabel]; !ok {
+				d.RoutingTable[routeType][sourceLabel] = make(map[string]float64)
+				d.RoutingTable[routeType][sourceLabel] = target
+				continue
+			}
+
+			for targetLabel, weight := range target {
+				d.RoutingTable[routeType][sourceLabel][targetLabel] = weight
+			}
+		}
 	}
 	d.mu.Unlock()
 }
 
-func (d *Device) RemoveRoutings(routes []uuid.UUID) {
+func (d *Device) RemoveRoutings(routeType, source, target string) {
 	d.mu.Lock()
-	for _, route := range routes {
-		delete(d.RoutingTable, route)
+	route, exists := d.RoutingTable[routeType][source]
+	if exists {
+		delete(route, target)
 	}
 	d.mu.Unlock()
 }
 
 func (d *Device) RemoveFromTableRoutesWith(deviceLabel string) {
 	d.mu.Lock()
-	for routeUuid, route := range d.RoutingTable {
-		if deviceLabel == route.Source || deviceLabel == route.Target {
-			delete(d.RoutingTable, routeUuid)
+	for _, routes := range d.RoutingTable {
+		for sourceLabel, _ := range routes {
+			if sourceLabel == deviceLabel {
+				delete(d.RoutingTable, sourceLabel)
+				continue
+			}
+
+			route, exists := d.RoutingTable[sourceLabel][deviceLabel]
+			if exists {
+				delete(route, deviceLabel)
+			}
 		}
 	}
 	d.mu.Unlock()
 }
 
-func (d *Device) GetRoutingTable() map[uuid.UUID]Routing {
+func (d *Device) GetRoutingTable() Routing {
 	d.mu.Lock()
-	routingTable := make(map[uuid.UUID]Routing, len(d.RoutingTable))
-	for key, value := range d.RoutingTable {
-		routingTable[key] = value
-	}
+	routingTable := make(Routing)
+	routingTable = d.RoutingTable
 	d.mu.Unlock()
 	return routingTable
 }
 
-func (d *Device) GetUnreadMessages() map[uuid.UUID]*Message {
+func (d *Device) GetUnreadRequests() map[uuid.UUID]*Request {
 	d.mu.Lock()
-	unreadMessages := make(map[uuid.UUID]*Message)
-	for _, message := range d.Messages.Received {
-		if !message.IsRead() {
-			unreadMessages[message.ID] = message
+	unreadRequests := make(map[uuid.UUID]*Request)
+	for _, Request := range d.Requests.Received {
+		if !Request.IsRead() {
+			unreadRequests[Request.ID] = Request
 		}
 	}
 	d.mu.Unlock()
-	return unreadMessages
+	return unreadRequests
 }
 
-func (d *Device) GetReadMessages() map[uuid.UUID]*Message {
+func (d *Device) GetReadRequests() map[uuid.UUID]*Request {
 	d.mu.Lock()
-	readMessages := make(map[uuid.UUID]*Message)
-	for _, message := range d.Messages.Received {
-		if message.IsRead() {
-			readMessages[message.ID] = message
+	readRequests := make(map[uuid.UUID]*Request)
+	for _, Request := range d.Requests.Received {
+		if Request.IsRead() {
+			readRequests[Request.ID] = Request
 		}
 	}
 	d.mu.Unlock()
-	return readMessages
+	return readRequests
 }
 
-func (d *Device) GetMessagesSent() map[uuid.UUID]*Message {
+func (d *Device) GetRequestsSent() map[uuid.UUID]*Request {
 	d.mu.Lock()
-	messagesSent := d.Messages.Sent
+	RequestsSent := d.Requests.Sent
 	d.mu.Unlock()
-	return messagesSent
+	return RequestsSent
 }
 
-func (d *Device) AddMessageToSent(message *Message) {
+func (d *Device) AddRequestToSent(Request *Request) {
 	d.mu.Lock()
-	d.Messages.Sent[message.ID] = message
+	d.Requests.Sent[Request.ID] = Request
 	d.mu.Unlock()
 }
 
-func (d *Device) AddMessageToReceived(message *Message) {
+func (d *Device) AddRequestToReceived(Request *Request) {
 	d.mu.Lock()
-	d.Messages.Received[message.ID] = message
+	d.Requests.Received[Request.ID] = Request
 	d.mu.Unlock()
 }
 
@@ -168,19 +192,23 @@ func (d *Device) PrintPrettyTable() {
 		return
 	}
 
-	fmt.Printf("%s\n", strings.Repeat("-", 67))
-	fmt.Printf("| %-36s | %-24s | \n", "Device", d.GetDeviceLabel())
-	fmt.Printf("%s\n", strings.Repeat("-", 67))
-	fmt.Printf("| %-36s | %-6s | %-6s | %-6s | \n", "Route UUID", "Source", "Target", "Weight")
-	fmt.Printf("%s\n", strings.Repeat("-", 67))
-	for routeUuid, route := range table {
-		fmt.Printf("| %-36v | %-6s | %-6s | %-6.2f |\n", routeUuid, route.Source, route.Target, route.Weight)
+	fmt.Printf("%s\n", strings.Repeat("-", 80))
+	fmt.Printf("| %-10s | %-24s | \n", "Device", d.GetDeviceLabel())
+	fmt.Printf("%s\n", strings.Repeat("-", 80))
+	fmt.Printf("| %-10s | %-6s | %-6s | %-6s | \n", "Type", "Source", "Target", "Weight")
+	fmt.Printf("%s\n", strings.Repeat("-", 80))
+	for routingType, routes := range table {
+		for sourceLabel, target := range routes {
+			for targetLabel, weight := range target  {
+				fmt.Printf("| %-10s | %-6s | %-6s | %-6.2f |\n", routingType, sourceLabel, targetLabel, weight)
+			}
+		}
 	}
-	fmt.Printf("%s\n", strings.Repeat("-", 67))
+	fmt.Printf("%s\n", strings.Repeat("-", 80))
 }
 
-func (d *Device) DeleteMessage(messageId uuid.UUID) {
+func (d *Device) DeleteRequest(RequestId uuid.UUID) {
 	d.mu.Lock()
-	delete(d.Messages.Received, messageId)
+	delete(d.Requests.Received, RequestId)
 	d.mu.Unlock()
 }

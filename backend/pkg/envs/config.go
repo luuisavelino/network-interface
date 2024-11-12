@@ -42,7 +42,7 @@ func init() {
 
 	fmt.Println(cfg.log)
 
-	if cfg.log.Level != "error" {
+	if cfg.log.Level != "debug" {
 		cfg.log.Level = "error"
 	}
 
