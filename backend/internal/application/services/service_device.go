@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewDeviceService(environment entities.Environment, scheduler gocron.Scheduler) DeviceService {
+func NewDeviceService(environment *entities.Environment, scheduler gocron.Scheduler) DeviceService {
 	return deviceService{
 		environment: environment,
 		scheduler:   scheduler,
@@ -28,7 +28,7 @@ func NewDeviceService(environment entities.Environment, scheduler gocron.Schedul
 }
 
 type deviceService struct {
-	environment entities.Environment
+	environment *entities.Environment
 	scheduler   gocron.Scheduler
 	jobs        Jobs
 }
@@ -90,7 +90,7 @@ func (rs deviceService) GetDevice(ctx context.Context, deviceLabel string) (enti
 
 	device := rs.environment.GetDeviceByLabel(deviceLabel)
 	if device == nil {
-		return entities.Device{}, errors.New(fmt.Sprintf("device not found: %s", deviceLabel))
+		return entities.Device{}, fmt.Errorf("device not found: %s", deviceLabel)
 	}
 
 	return *device, nil
@@ -161,7 +161,7 @@ func (rs deviceService) ReadMessages(ctx context.Context, deviceLabel string) er
 	device := rs.environment.GetDeviceByLabel(deviceLabel)
 	if device == nil {
 		fmt.Println("device not found: ", deviceLabel)
-		return errors.New(fmt.Sprintf("device not found: %s", deviceLabel))
+		return fmt.Errorf("device not found: %s", deviceLabel)
 	}
 
 	rs.ProcessAutomaticMessages(ctx, device)
@@ -214,7 +214,7 @@ func (rs deviceService) NewConnection(ctx context.Context, current, sender strin
 	currentDevice := rs.environment.GetDeviceByLabel(current)
 	if currentDevice == nil {
 		fmt.Println("device not found: ", current)
-		return errors.New(fmt.Sprintf("device not found: %s", current))
+		return fmt.Errorf("device not found: %s", current)
 	}
 
 	isNearby := rs.environment.CheckIfDeviceIsNearby(current, sender)
@@ -245,12 +245,12 @@ func (rs deviceService) NewConnectionAck(ctx context.Context, current, sender st
 
 	currentDevice := rs.environment.GetDeviceByLabel(current)
 	if currentDevice == nil {
-		return errors.New(fmt.Sprintf("device not found: %s", current))
+		return fmt.Errorf("device not found: %s", current)
 	}
 
 	senderDevice := rs.environment.GetDeviceByLabel(sender)
 	if senderDevice == nil {
-		return errors.New(fmt.Sprintf("device not found: %s", sender))
+		return fmt.Errorf("device not found: %s", sender)
 	}
 
 	message := entities.NewMessage(
@@ -290,7 +290,7 @@ func (rs deviceService) UpdateRouting(ctx context.Context, current, sender strin
 
 	currentDevice := rs.environment.GetDeviceByLabel(current)
 	if currentDevice == nil {
-		return errors.New(fmt.Sprintf("device not found: %s", current))
+		return fmt.Errorf("device not found: %s", current)
 	}
 
 	currentDevice.RemoveFromTableRoutesWith(sender)
@@ -307,12 +307,12 @@ func (rs deviceService) UserMessage(ctx context.Context, current, sender string)
 
 	currentDevice := rs.environment.GetDeviceByLabel(current)
 	if currentDevice == nil {
-		return errors.New(fmt.Sprintf("device not found: %s", current))
+		return fmt.Errorf("device not found: %s", current)
 	}
 
 	senderDevice := rs.environment.GetDeviceByLabel(sender)
 	if senderDevice == nil {
-		return errors.New(fmt.Sprintf("device not found: %s", sender))
+		return fmt.Errorf("device not found: %s", sender)
 	}
 
 	newMessage := entities.NewMessage(
@@ -335,7 +335,7 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceLabel stri
 
 	currentDevice := rs.environment.GetDeviceByLabel(deviceLabel)
 	if currentDevice == nil {
-		return errors.New(fmt.Sprintf("device not found: %s", deviceLabel))
+		return fmt.Errorf("device not found: %s", deviceLabel)
 	}
 
 	currentDevice.SetScanningDevices(true)
@@ -343,7 +343,7 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceLabel stri
 
 	devicePosition := rs.environment.GetDeviceInChart(deviceLabel)
 	if devicePosition == nil {
-		return errors.New(fmt.Sprintf("device not found: %s", deviceLabel))
+		return fmt.Errorf("device not found: %s", deviceLabel)
 	}
 
 	devicesNearby := rs.environment.ScanDeviceNearby(deviceLabel)
@@ -363,22 +363,11 @@ func (rs deviceService) UpdateRoutingTable(ctx context.Context, deviceLabel stri
 		rs.SendMessage(currentDevice, device, message)
 	}
 
-	timeout := time.After(15 * time.Second)
+	time.Sleep(15 * time.Second)
 
-	for {
-		select {
-		case <-timeout:
-			logger.Info("Timeout while waiting for devices to connect",
-				zap.String("deviceLabel", deviceLabel),
-			)
+	rs.PropagateRoutingTable(ctx, currentDevice)
 
-			rs.PropagateRoutingTable(ctx, currentDevice)
-
-			currentDevice.SetScanningDevices(false)
-
-			return nil
-		}
-	}
+	currentDevice.SetScanningDevices(false)
 
 	return nil
 }
@@ -483,6 +472,7 @@ func (rs *deviceService) scheduleTask(deviceLabel string, interval time.Duration
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	switch jobType {
 	case "updateRoutingTable":
@@ -554,7 +544,7 @@ func (rs deviceService) DeleteDevice(ctx context.Context, deviceLabel string) er
 
 	device := rs.environment.GetDeviceByLabel(deviceLabel)
 	if device == nil {
-		return errors.New(fmt.Sprintf("device not found: %s", deviceLabel))
+		return fmt.Errorf("device not found: %s", deviceLabel)
 	}
 
 	rs.CancelJob("message", deviceLabel)

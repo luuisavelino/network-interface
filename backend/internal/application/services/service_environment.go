@@ -9,14 +9,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewEnvironmentService(environment entities.Environment) EnvironmentService {
+func NewEnvironmentService(environment *entities.Environment) EnvironmentService {
 	return environmentService{
 		environment: environment,
 	}
 }
 
 type environmentService struct {
-	environment entities.Environment
+	environment *entities.Environment
 }
 
 type EnvironmentService interface {
@@ -49,7 +49,7 @@ func (rs environmentService) SetDeviceInChart(ctx context.Context, deviceLabel s
 	device := rs.environment.GetDeviceByLabel(deviceLabel)
 	if device == nil {
 		logger.Error("Device not found",
-			errors.New("Device not found"),
+			errors.New("device not found"),
 			zap.String("deviceLabel", deviceLabel),
 		)
 		return

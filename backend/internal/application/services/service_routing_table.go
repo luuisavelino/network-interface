@@ -8,14 +8,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewRoutingTableService(environment entities.Environment) RoutingTableService {
+func NewRoutingTableService(environment *entities.Environment) RoutingTableService {
 	return routingTableService{
 		environment: environment,
 	}
 }
 
 type routingTableService struct {
-	environment entities.Environment
+	environment *entities.Environment
 }
 
 type RoutingTableService interface {

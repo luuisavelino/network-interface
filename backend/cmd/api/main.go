@@ -25,9 +25,9 @@ func main() {
 	}
 
 	services := services.ApiServices{
-		RoutingTable: services.NewRoutingTableService(environment),
-		Device:       services.NewDeviceService(environment, s),
-		Environment:  services.NewEnvironmentService(environment),
+		RoutingTable: services.NewRoutingTableService(&environment),
+		Device:       services.NewDeviceService(&environment, s),
+		Environment:  services.NewEnvironmentService(&environment),
 	}
 
 	apiController := controllers.NewApiController(services)
