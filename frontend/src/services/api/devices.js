@@ -38,10 +38,10 @@ const getDeviceById = (deviceId) => {
   return axios.request(config)
 }
 
-const getRoute = (sourceId, targetId) => {
+const getRoute = (sourceId, targetId, type = "distance") => {
   const config = {
     method: 'get',
-    url: API_URL + '/route/' + sourceId + '/' + targetId,
+    url: API_URL + '/route/' + sourceId + '/' + targetId + '?type=' + type,
     headers,
   };
 
@@ -61,7 +61,7 @@ const deleteDevice = (deviceLabel) => {
 const sendMessage = (data) => {
   const config = {
     method: 'post',
-    url: API_URL + '/message',
+    url: API_URL + '/requests',
     headers,
     data,
   };

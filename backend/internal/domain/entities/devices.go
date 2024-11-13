@@ -192,11 +192,11 @@ func (d *Device) PrintPrettyTable() {
 		return
 	}
 
-	fmt.Printf("%s\n", strings.Repeat("-", 80))
+	fmt.Printf("%s\n", strings.Repeat("-", 40))
 	fmt.Printf("| %-10s | %-24s | \n", "Device", d.GetDeviceLabel())
-	fmt.Printf("%s\n", strings.Repeat("-", 80))
+	fmt.Printf("%s\n", strings.Repeat("-", 40))
 	fmt.Printf("| %-10s | %-6s | %-6s | %-6s | \n", "Type", "Source", "Target", "Weight")
-	fmt.Printf("%s\n", strings.Repeat("-", 80))
+	fmt.Printf("%s\n", strings.Repeat("-", 40))
 	for routingType, routes := range table {
 		for sourceLabel, target := range routes {
 			for targetLabel, weight := range target  {
@@ -204,7 +204,7 @@ func (d *Device) PrintPrettyTable() {
 			}
 		}
 	}
-	fmt.Printf("%s\n", strings.Repeat("-", 80))
+	fmt.Printf("%s\n", strings.Repeat("-", 40))
 }
 
 func (d *Device) DeleteRequest(RequestId uuid.UUID) {

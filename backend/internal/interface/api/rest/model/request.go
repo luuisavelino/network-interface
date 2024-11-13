@@ -38,6 +38,7 @@ type Header struct {
 	Topic       string `json:"topic"`
 	Sender      string `json:"sender"`
 	Destination string `json:"destination"`
+	ContentType string `json:"content-type"`
 }
 
 func (m RequestRequest) ToDomain() entities.Request {
@@ -45,6 +46,7 @@ func (m RequestRequest) ToDomain() entities.Request {
 		Header: entities.Header{
 			Sender:      m.Header.Sender,
 			Destination: m.Header.Destination,
+			ContentType: m.Header.ContentType,
 		},
 		Body: m.Body,
 	}
@@ -73,6 +75,7 @@ func ToRequestResponse(m entities.Request) RequestResponse {
 			Topic:       m.Header.Topic,
 			Sender:      m.Header.Sender,
 			Destination: m.Header.Destination,
+			ContentType: m.Header.ContentType,
 		},
 		Body: content,
 		Read: m.IsRead(),

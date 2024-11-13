@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"runtime"
 	"time"
 
@@ -301,8 +302,8 @@ func (rs deviceService) NewConnectionAck(ctx context.Context, current, sender st
 
 	currentDevice.SetDeviceWithConn(
 		sender,
-		1,
-		1,
+		rand.Float64() * 10,
+		rand.Float64() * 10,
 	)
 
 	return nil
@@ -528,7 +529,7 @@ func (rs deviceService) SendRequest(currentDevice *entities.Device, targetDevice
 	)
 
 	targetDevice.AddRequestToReceived(&request)
-	if request.Header.Topic == "user-message" {
+	if request.Header.Topic == "user-message" || request.Header.Topic == "user-message-ack" {
 		currentDevice.AddRequestToSent(&request)
 	}
 	// currentDevice.AddRequestToSent(&request)

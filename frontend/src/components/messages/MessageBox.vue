@@ -43,9 +43,12 @@ export default {
     send() {
       if (this.message && this.selectedRecipient) {
         this.$emit('sendMessage', {
-          sender: this.currentDevice,
-          destination: this.selectedRecipient, 
-          content: this.message
+          header: {
+            sender: this.currentDevice,
+            destination: this.selectedRecipient,
+            'content-type': "text"
+          },
+          body: this.message
         });
         this.message = '';
       } else {
