@@ -8,10 +8,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/RyanCarrier/dijkstra/v2"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
 	"github.com/luuisavelino/network-interface/internal/domain/entities"
+	"github.com/luuisavelino/network-interface/internal/domain/entities/dijkstra"
 	"github.com/luuisavelino/network-interface/pkg/logger"
 	"go.uber.org/zap"
 )
