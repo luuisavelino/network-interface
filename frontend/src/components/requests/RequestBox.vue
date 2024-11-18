@@ -8,6 +8,16 @@
         </option>
       </select>
     </div>
+
+    <div class="mb-4">
+      <label for="recipient" class="block text-sm font-medium">Media Type:</label>
+      <select id="recipient" v-model="selectedMidiaType" class="mt-1 block w-full border border-gray-300 rounded-md p-1">
+        <option v-for="midiaType in midiaTypes" :key="midiaType" :value="midiaType">
+          {{ midiaType }}
+        </option>
+      </select>
+    </div>
+
     <textarea v-model="message" rows="4" placeholder="Digite sua mensagem..." class="block w-full border border-gray-300 rounded-md p-2"></textarea>
     <button @click="send" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">Enviar</button>
   </div>
@@ -28,7 +38,9 @@ export default {
   data() {
     return {
       selectedRecipient: '',
+      selectedMidiaType: '',
       message: '',
+      midiaTypes: ['distance', 'text', 'audio', 'file']
     };
   },
   computed: {
@@ -44,7 +56,7 @@ export default {
           header: {
             sender: this.currentDevice,
             destination: this.selectedRecipient,
-            'content-type': "text"
+            'content-type': this.selectedRecipient ?? "text",
           },
           body: this.message
         });

@@ -4,6 +4,16 @@
     <form @submit.prevent="handleSubmit">
 
       <div class="flex gap-4 mb-4">
+
+        <div class="mb-4 flex-1">
+          <label for="recipient" class="block text-sm font-medium">Media Type:</label>
+          <select id="recipient" v-model="selectedMidiaType" class="mt-1 block w-full border border-gray-300 rounded-md p-1">
+            <option v-for="midiaType in midiaTypes" :key="midiaType" :value="midiaType">
+              {{ midiaType }}
+            </option>
+          </select>
+        </div>
+
         <div class="flex-1">
           <label for="source" class="block text-sm font-medium text-gray-700">Source</label>
           <input type="text" v-model="source" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="source" required>
@@ -36,13 +46,15 @@ export default {
     return {
       source: null,
       target: null,
-      responseData: null
+      responseData: null,
+      midiaTypes: ['distance', 'text', 'audio', 'file'],
+      selectedMidiaType: ''
     };
   },
   methods: {
     async handleSubmit() {
       try {
-        const route = await servicesDevices.getRoute(this.source, this.target);
+        const route = await servicesDevices.getRoute(this.source, this.target, this.selectedMidiaType);
         this.$emit("get-route", route.data);
 
         this.source = null

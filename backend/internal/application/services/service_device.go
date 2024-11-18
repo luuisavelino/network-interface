@@ -444,14 +444,14 @@ func (rs deviceService) BuildRoutingTableRow(device *entities.Device, deviceConn
 	routingTable["distance"] = make(map[string]map[string]float64)
 	routingTable["distance"][currDevice] = make(map[string]float64)
 	routingTable["distance"][currDevice][deviceConn] = weight
-	
-	routingTable["error-rate"] = make(map[string]map[string]float64)
-	routingTable["error-rate"][currDevice] = make(map[string]float64)
-	routingTable["error-rate"][currDevice][deviceConn] = device.DevicesWithConn[deviceConn].GetErrorRate()
-	
+
 	routingTable["latency"] = make(map[string]map[string]float64)
 	routingTable["latency"][currDevice] = make(map[string]float64)
 	routingTable["latency"][currDevice][deviceConn] = device.DevicesWithConn[deviceConn].GetLatency()
+
+	routingTable["error-rate"] = make(map[string]map[string]float64)
+	routingTable["error-rate"][currDevice] = make(map[string]float64)
+	routingTable["error-rate"][currDevice][deviceConn] = 1 / (1 - device.DevicesWithConn[deviceConn].GetErrorRate())
 
 	return routingTable
 }
