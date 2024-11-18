@@ -19,18 +19,6 @@
         </div>
       </div>
 
-      <div class="flex gap-4 mb-4">
-        <div class="flex-1">
-          <label for="walking_speed" class="block text-sm font-medium text-gray-700">Velocidade de Caminhada</label>
-          <input type="number" v-model="formData.walking_speed" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="walking_speed" required>
-        </div>
-
-        <div class="flex-1">
-          <label for="message_freq" class="block text-sm font-medium text-gray-700">Frequência de Mensagens</label>
-          <input type="number" v-model="formData.message_freq" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="message_freq" required>
-        </div>
-      </div>
-
       <div class="flex justify-end">
         <button type="submit" class="btn btn-primary bg-indigo-600 text-white py-2 px-4 rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Enviar</button>
       </div>
@@ -53,9 +41,7 @@ export default {
       formData: {
         label: null,
         power: null,
-        battery: null,
-        walking_speed: null,
-        message_freq: null
+        battery: null
       },
       responseData: null
     };
@@ -72,9 +58,7 @@ export default {
       this.formData = {
         label: null,
         power: null,
-        battery: null,
-        walking_speed: null,
-        message_freq: null
+        battery: null
       }
     }
   }

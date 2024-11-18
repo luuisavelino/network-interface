@@ -3,7 +3,7 @@
     <div class="flex-grow h-4/5 overflow-y-auto">
       <ul>
         <li v-for="message in messasgesOrdered" :key="message.id" class="border-b p-2">
-          <strong>{{ targetMessage }}</strong> {{ targetField(message) }} <br />
+          <strong>{{ targetRequest }}</strong> {{ targetField(message) }} <br />
           {{ message.content }} <br />
           <div class="flex flex-row">
             <small class="text-gray-500">{{ this.formatDate(message.date) }}</small>
@@ -17,7 +17,7 @@
 <script>
 export default {
   props: {
-    messages: {
+    requests: {
       type: Array,
       required: true
     },
@@ -27,12 +27,12 @@ export default {
     }
   },
   computed: {
-    targetMessage() {
+    targetRequest() {
       return this.type === 'sent' ? 'To:' : 'From:';
     },
     messasgesOrdered() {
-      const messages = this.messages;
-      return messages?.sort((a, b) => new Date(b.date) - new Date(a.date));
+      const requests = this.requests;
+      return requests?.sort((a, b) => new Date(b.date) - new Date(a.date));
     }
   },
   methods: {
@@ -42,7 +42,7 @@ export default {
         date.toTimeString().slice(0, 8);
     },
     targetField(message) {
-      return this.type === 'sent' ? message.destination : message.sender;
+      return this.type === 'sent' ? message.header.destination : message.header.sender;
     }
   }
 }

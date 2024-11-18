@@ -5,13 +5,13 @@
 
       <div class="flex gap-4 mb-4">
         <div class="flex-1">
-          <label for="walking_speed" class="block text-sm font-medium text-gray-700">Source</label>
-          <input type="text" v-model="source" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="walking_speed" required>
+          <label for="source" class="block text-sm font-medium text-gray-700">Source</label>
+          <input type="text" v-model="source" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="source" required>
         </div>
 
         <div class="flex-1">
-          <label for="message_freq" class="block text-sm font-medium text-gray-700">Target</label>
-          <input type="text" v-model="target" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="message_freq" required>
+          <label for="target" class="block text-sm font-medium text-gray-700">Target</label>
+          <input type="text" v-model="target" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-md p-1" id="target" required>
         </div>
       </div>
 

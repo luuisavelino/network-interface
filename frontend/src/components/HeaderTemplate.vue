@@ -12,9 +12,9 @@
         <li @click="navigate('FindBestRoute')" 
             :class="{'text-blue-400 font-bold': selectedTab === 'FindBestRoute', 'text-white': selectedTab !== 'FindBestRoute'}"
             class="cursor-pointer transition duration-200">Find</li>
-        <li @click="navigate('MessageTemplate')" 
-            :class="{'text-blue-400 font-bold': selectedTab === 'MessageTemplate', 'text-white': selectedTab !== 'MessageTemplate'}"
-            class="cursor-pointer transition duration-200">Messages</li>
+        <li @click="navigate('RequestTemplate')" 
+            :class="{'text-blue-400 font-bold': selectedTab === 'RequestTemplate', 'text-white': selectedTab !== 'RequestTemplate'}"
+            class="cursor-pointer transition duration-200">Requests</li>
       </ul>
     </nav>
   </header>

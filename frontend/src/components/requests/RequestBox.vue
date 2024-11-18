@@ -33,16 +33,14 @@ export default {
   },
   computed: {
     filteredRecipient() {
-      console.log(this.recipients);
       if (!this.recipients || this.recipients.length === 0) return [];
-
       return this.recipients.filter(recipient => recipient !== this.currentDevice);
     }
   },
   methods: {
     send() {
       if (this.message && this.selectedRecipient) {
-        this.$emit('sendMessage', {
+        this.$emit('sendRequest', {
           header: {
             sender: this.currentDevice,
             destination: this.selectedRecipient,

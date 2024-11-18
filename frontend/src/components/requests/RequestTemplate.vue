@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-1/2 w-full">
-    <SideBar @select="selectTab" @selected-device="selectedDevice" :devices="devicesLabel"/>
+    <SideBar @select="selectTab" @selected-device="selectedDevice" :devices="devicesLabel ?? []"/>
     <div class="flex-grow p-4">
       <div class="border rounded-lg p-4">
         <div class="flex items-center mb-8 justify-between">
@@ -17,16 +17,16 @@
         </div>
 
         <div v-if="currentTab === 'Read'">
-          <MessageList :type="'received'" :messages="filteredMessages('received', true)" />
+          <RequestList :type="'received'" :requests="filteredRequests('received', true)" />
         </div>
         <div v-if="currentTab === 'Unread'">
-          <MessageList :type="'received'" :messages="filteredMessages('received', false)" />
+          <RequestList :type="'received'" :requests="filteredRequests('received', false)" />
         </div>
         <div v-if="currentTab === 'Sent'">
-          <MessageList :type="'sent'" :messages="filteredMessages('sent', false)" />
+          <RequestList :type="'sent'" :requests="filteredRequests('sent', false)" />
         </div>
         <div v-if="currentTab === 'New'">
-          <MessageBox :currentDevice="currentDevice" :recipients="this.devicesLabel" @sendMessage="sendMessage" />
+          <RequestBox :currentDevice="currentDevice" :recipients="this.devicesLabel" @sendRequest="sendRequest" />
         </div>
       </div>
     </div>
@@ -35,16 +35,16 @@
 
 <script>
 import SideBar from './SideBar.vue';
-import MessageList from './MessageList.vue';
-import MessageBox from './MessageBox.vue';
+import RequestList from './RequestList.vue';
+import RequestBox from './RequestBox.vue';
 
 import servicesDevices from '@/services/api/devices';
 
 export default {
   components: {
     SideBar,
-    MessageList,
-    MessageBox,
+    RequestList,
+    RequestBox,
   },
   props: {
     devicesLabel: {
@@ -76,26 +76,26 @@ export default {
     selectedDevice(device) {
       this.currentDevice = device;
     },
-    filteredMessages(type, status) {
+    filteredRequests(type, status) {
       if (!this.devices[this.currentDevice]) {
         servicesDevices.getDeviceById(this.currentDevice)
         .then(response => this.devices[this.currentDevice] = response.data);
       }
 
       if (type === 'sent') {
-        return this.devices[this.currentDevice]?.messages.sent;
+        return this.devices[this.currentDevice]?.requests?.sent;
       }
-
-      return this.devices[this.currentDevice]?.messages.received.filter(message => {
+      
+      return this.devices[this.currentDevice]?.requests?.received.filter(message => {
         if (this.selectedFilter === 'all') {
           return message.read === status;
         }
 
-        return message.topic === this.selectedFilter && message.read === status;
+        return message.header.topic === this.selectedFilter && message.read === status;
       });
     },
-    sendMessage(data){
-      servicesDevices.sendMessage(data)
+    sendRequest(data){
+      servicesDevices.sendRequest(data)
         .catch(error => {
           console.error(error);
         });

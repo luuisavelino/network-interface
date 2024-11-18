@@ -58,7 +58,7 @@ const deleteDevice = (deviceLabel) => {
   return axios.request(config)
 }
 
-const sendMessage = (data) => {
+const sendRequest = (data) => {
   const config = {
     method: 'post',
     url: API_URL + '/requests',
@@ -75,5 +75,5 @@ export default {
   getDeviceById,
   getRoute,
   deleteDevice,
-  sendMessage,
+  sendRequest,
 }

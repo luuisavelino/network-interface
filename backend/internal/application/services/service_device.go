@@ -142,45 +142,48 @@ func (rs deviceService) SendUserMessage(ctx context.Context, request entities.Re
 }
 
 func (rs deviceService) PropagateRequest(ctx context.Context, routes []entities.Route, request entities.Request) {
+	sender := routes[0].Source
 	target := routes[0].Target
 
-	currentDevice := rs.environment.GetDeviceByLabel(request.Header.Sender)
+	currentDevice := rs.environment.GetDeviceByLabel(sender)
 	targetDevice := rs.environment.GetDeviceByLabel(target)
 
 	routes = routes[1:]
 
 	newRequest := entities.NewRequest(
 		"user-message",
-		request.Header.Sender,
+		sender,
 		target,
 		routes,
 		request.Body,
 	)
 
-	go func() {
-		const maxRetries = 3
-		const maxTimeout = 5 * time.Second
+	rs.SendRequest(currentDevice, targetDevice, newRequest)
 
-		for i := 0; i < maxRetries; i++ {
-			rs.SendRequest(currentDevice, targetDevice, newRequest)
+	// go func() {
+	// 	const maxRetries = 1
+	// 	const maxTimeout = 5 * time.Second
 
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(maxTimeout):
-				for _, msg := range targetDevice.GetUnreadRequests() {
-					if msg.Header.Topic == "user-message-ack" && msg.Header.Sender == request.Header.Destination {
-						msg.Read()
-						return
-					}
-				}
-			}
-		}
-		logger.Info("Failed to receive user-message-ack after retries",
-			zap.String("current", request.Header.Sender),
-			zap.String("target", request.Header.Destination),
-		)
-	}()
+	// 	for i := 0; i < maxRetries; i++ {
+	// 		rs.SendRequest(currentDevice, targetDevice, newRequest)
+
+	// 		select {
+	// 		case <-ctx.Done():
+	// 			return
+	// 		case <-time.After(maxTimeout):
+	// 			for _, msg := range targetDevice.GetUnreadRequests() {
+	// 				if msg.Header.Topic == "user-message-ack" && msg.Header.Sender == target {
+	// 					msg.Read()
+	// 					return
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	logger.Info("Failed to receive user-message-ack after retries",
+	// 		zap.String("current", request.Header.Sender),
+	// 		zap.String("target", request.Header.Destination),
+	// 	)
+	// }()
 }
 
 func (rs deviceService) ReadRequests(ctx context.Context, deviceLabel string) error {
@@ -356,7 +359,7 @@ func (rs deviceService) UserMessage(ctx context.Context, current, sender string,
 		return fmt.Errorf("device not found: %s", current)
 	}
 
-	senderDevice := rs.environment.GetDeviceByLabel(sender)
+	senderDevice := rs.environment.GetDeviceByLabel(request.Header.Sender)
 	if senderDevice == nil {
 		return fmt.Errorf("device not found: %s", sender)
 	}

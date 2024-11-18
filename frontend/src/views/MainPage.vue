@@ -20,7 +20,7 @@ import servicesChart from '@/services/api/chart';
 
 import HeaderTemplate from '@/components/HeaderTemplate.vue';
 import BubbleChart from '@/components/BubbleChart.vue';
-import MessageTemplate from '@/components/messages/MessageTemplate.vue';
+import RequestTemplate from '@/components/requests/RequestTemplate.vue';
 import FindBestRoute from '@/components/FindBestRoute.vue';
 import AddDevice from '@/components/AddDevice.vue';
 import ListDevice from '@/components/ListDevice.vue';
@@ -32,7 +32,7 @@ export default {
     BubbleChart,
     AddDevice,
     FindBestRoute,
-    MessageTemplate,
+    RequestTemplate,
     ListDevice,
   },
   data() {
