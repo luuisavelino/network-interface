@@ -305,8 +305,8 @@ func (rs deviceService) NewConnectionAck(ctx context.Context, current, sender st
 
 	currentDevice.SetDeviceWithConn(
 		sender,
-		rand.Float64() * 10,
-		rand.Float64() * 10,
+		rand.Float64() * 100,
+		rand.Float64() * 100,
 	)
 
 	return nil
